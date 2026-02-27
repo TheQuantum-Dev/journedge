@@ -1,10 +1,11 @@
 "use client";
 import {
   LayoutDashboard, BookOpen, BarChart2, Calendar,
-  Upload, PlusCircle, Settings, Wallet,
+  Upload, PlusCircle, Settings, Wallet, ChevronDown,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { PageId } from "../lib/types";
+import { PageId, Account } from "../lib/types";
+import { useState } from "react";
 
 const NAV_ITEMS: { icon: any; label: string; id: PageId }[] = [
   { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
@@ -16,26 +17,23 @@ const NAV_ITEMS: { icon: any; label: string; id: PageId }[] = [
 ];
 
 export default function Sidebar() {
-  const { activePage, setActivePage } = useApp();
+  const { activePage, setActivePage, accounts, activeAccount, setActiveAccount } = useApp();
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
 
   return (
     <aside style={{
-      width: "220px",
-      minWidth: "220px",
+      width: "220px", minWidth: "220px",
       background: "var(--bg-secondary)",
       borderRight: "1px solid var(--border)",
-      display: "flex",
-      flexDirection: "column",
+      display: "flex", flexDirection: "column",
       padding: "24px 0",
     }}>
       {/* Logo */}
-      <div style={{ padding: "0 24px 32px" }}>
+      <div style={{ padding: "0 24px 24px" }}>
         <h1 style={{
-          fontSize: "24px",
-          fontWeight: "800",
+          fontSize: "24px", fontWeight: "800",
           background: "linear-gradient(135deg, #00e57a, #4d9fff)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           letterSpacing: "-0.5px",
         }}>
           Tradello
@@ -44,6 +42,120 @@ export default function Sidebar() {
           Trading Journal
         </p>
       </div>
+
+      {/* Account Switcher */}
+      {accounts.length > 0 && (
+        <div style={{ padding: "0 12px 20px", position: "relative" }}>
+          <button
+            onClick={() => setShowAccountMenu(!showAccountMenu)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center",
+              justifyContent: "space-between", padding: "10px 12px",
+              borderRadius: "8px", border: "1px solid var(--border)",
+              background: "var(--bg-card)", cursor: "pointer",
+              gap: "8px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+              <div style={{
+                width: "24px", height: "24px", borderRadius: "6px",
+                background: "rgba(0,229,122,0.15)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                <Wallet size={12} color="#00e57a" />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  fontSize: "12px", fontWeight: "600", color: "#f0f0ff",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}>
+                  {activeAccount?.name || "Select Account"}
+                </div>
+                <div style={{ fontSize: "10px", color: "#8888aa" }}>
+                  {activeAccount?.broker || ""}
+                </div>
+              </div>
+            </div>
+            <ChevronDown
+              size={12} color="#8888aa"
+              style={{ transform: showAccountMenu ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease", flexShrink: 0 }}
+            />
+          </button>
+
+          {/* Dropdown */}
+          {showAccountMenu && (
+            <div style={{
+              position: "absolute", top: "calc(100% - 8px)", left: "12px",
+              right: "12px", background: "var(--bg-card)",
+              border: "1px solid var(--border)", borderRadius: "8px",
+              zIndex: 100, overflow: "hidden",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+            }}>
+              {accounts.map((account: Account) => (
+                <button
+                  key={account.id}
+                  onClick={() => { setActiveAccount(account); setShowAccountMenu(false); }}
+                  style={{
+                    width: "100%", padding: "10px 12px", border: "none",
+                    background: activeAccount?.id === account.id ? "rgba(0,229,122,0.1)" : "transparent",
+                    cursor: "pointer", textAlign: "left", display: "flex",
+                    alignItems: "center", justifyContent: "space-between",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "12px", fontWeight: "600", color: "#f0f0ff" }}>
+                      {account.name}
+                    </div>
+                    <div style={{ fontSize: "10px", color: "#8888aa" }}>
+                      {account.broker} · {account.currency} {account.initialBalance.toLocaleString()}
+                    </div>
+                  </div>
+                  {activeAccount?.id === account.id && (
+                    <div style={{
+                      width: "6px", height: "6px", borderRadius: "50%",
+                      background: "#00e57a", flexShrink: 0,
+                    }} />
+                  )}
+                </button>
+              ))}
+              <div style={{ borderTop: "1px solid var(--border)" }}>
+                <button
+                  onClick={() => { setActivePage("accounts"); setShowAccountMenu(false); }}
+                  style={{
+                    width: "100%", padding: "10px 12px", border: "none",
+                    background: "transparent", cursor: "pointer",
+                    textAlign: "left", fontSize: "12px", color: "#8888aa",
+                    display: "flex", alignItems: "center", gap: "6px",
+                  }}
+                >
+                  <PlusCircle size={12} />
+                  Manage Accounts
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* No accounts nudge */}
+      {accounts.length === 0 && (
+        <div style={{ padding: "0 12px 20px" }}>
+          <button
+            onClick={() => setActivePage("accounts")}
+            style={{
+              width: "100%", padding: "10px 12px", borderRadius: "8px",
+              border: "1px dashed var(--border)", background: "transparent",
+              cursor: "pointer", textAlign: "left",
+              fontSize: "12px", color: "#8888aa",
+              display: "flex", alignItems: "center", gap: "8px",
+            }}
+          >
+            <PlusCircle size={12} />
+            Create an account
+          </button>
+        </div>
+      )}
 
       {/* Nav Items */}
       <nav style={{ flex: 1, padding: "0 12px" }}>
@@ -54,22 +166,14 @@ export default function Sidebar() {
               key={id}
               onClick={() => setActivePage(id)}
               style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "none",
-                cursor: "pointer",
-                marginBottom: "2px",
+                width: "100%", display: "flex", alignItems: "center",
+                gap: "10px", padding: "10px 12px", borderRadius: "8px",
+                border: "none", cursor: "pointer", marginBottom: "2px",
                 background: active ? "var(--accent-green-dim)" : "transparent",
                 color: active ? "var(--accent-green)" : "var(--text-secondary)",
-                fontSize: "14px",
-                fontFamily: "'DM Sans', sans-serif",
+                fontSize: "14px", fontFamily: "'DM Sans', sans-serif",
                 fontWeight: active ? "600" : "400",
-                transition: "all 0.15s ease",
-                textAlign: "left",
+                transition: "all 0.15s ease", textAlign: "left",
               }}
               onMouseEnter={(e) => {
                 if (!active) {
@@ -96,20 +200,12 @@ export default function Sidebar() {
         <button
           onClick={() => setActivePage("import")}
           style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "10px",
-            borderRadius: "8px",
-            border: "1px solid var(--accent-green)",
-            background: "var(--accent-green-dim)",
-            color: "var(--accent-green)",
-            fontSize: "13px",
-            fontFamily: "'DM Sans', sans-serif",
-            fontWeight: "600",
-            cursor: "pointer",
+            width: "100%", display: "flex", alignItems: "center",
+            justifyContent: "center", gap: "8px", padding: "10px",
+            borderRadius: "8px", border: "1px solid var(--accent-green)",
+            background: "var(--accent-green-dim)", color: "var(--accent-green)",
+            fontSize: "13px", fontFamily: "'DM Sans', sans-serif",
+            fontWeight: "600", cursor: "pointer",
           }}
         >
           <PlusCircle size={15} />
@@ -119,21 +215,12 @@ export default function Sidebar() {
 
       {/* Settings */}
       <div style={{ padding: "16px 24px 0", borderTop: "1px solid var(--border)" }}>
-        <button
-          onClick={() => {}}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            background: "none",
-            border: "none",
-            color: "var(--text-muted)",
-            fontSize: "13px",
-            fontFamily: "'DM Sans', sans-serif",
-            cursor: "pointer",
-            padding: "8px 0",
-          }}
-        >
+        <button style={{
+          display: "flex", alignItems: "center", gap: "10px",
+          background: "none", border: "none", color: "var(--text-muted)",
+          fontSize: "13px", fontFamily: "'DM Sans', sans-serif",
+          cursor: "pointer", padding: "8px 0",
+        }}>
           <Settings size={15} />
           Settings
         </button>
