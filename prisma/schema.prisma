@@ -7,6 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Account {
+  id             String   @id
+  name           String
+  broker         String
+  initialBalance Float
+  currency       String   @default("USD")
+  createdAt      DateTime @default(now())
+  trades         Trade[]
+}
+
 model Trade {
   id           String   @id
   date         String
@@ -31,5 +41,7 @@ model Trade {
   journalEntry String?
   link         String?
   imageUrls    String   @default("[]")
+  accountId    String?
+  account      Account? @relation(fields: [accountId], references: [id])
   createdAt    DateTime @default(now())
 }

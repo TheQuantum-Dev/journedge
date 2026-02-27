@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../lib/db";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const accountId = searchParams.get("accountId");
+
     const trades = await prisma.trade.findMany({
+      where: accountId ? { accountId: accountId } : undefined,
       orderBy: { date: "desc" },
     });
     return NextResponse.json(trades);
@@ -19,8 +23,8 @@ export async function POST(request: NextRequest) {
     for (const trade of body.trades) {
       await prisma.trade.upsert({
         where: { id: trade.id },
-        update: trade,
-        create: trade,
+        update: { ...trade, accountId: body.accountId || null },
+        create: { ...trade, accountId: body.accountId || null },
       });
     }
     return NextResponse.json({ success: true });
