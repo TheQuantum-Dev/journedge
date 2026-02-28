@@ -2,6 +2,19 @@
 
 All notable changes to Tradello are documented here.
 
+## [1.1.0] - 2026-02-28
+
+### New Features
+
+- dashboard filtering by symbol, status, tag, date range and search (`959c69b`)
+- manual trade entry modal with live P&L preview and auto symbol detection (`70866c9`)
+
+### Maintenance
+
+- Added .env sample (`be11ffa`)
+- Updated ReadMe (`f39b78c`)
+- update gitignore for uploads folder (`48e5aa1`)
+
 ## [1.0.0] - 2026-02-28
 
 ### New Features
