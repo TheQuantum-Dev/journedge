@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import { Trade } from "../lib/parseFidelityCSV";
 import { TrendingUp, TrendingDown, Target, Zap, Award, Clock } from "lucide-react";
+import { useApp } from "../context/AppContext";
 
 interface Props {
   trades: Trade[];
@@ -21,8 +22,11 @@ export default function Analytics({ trades }: Props) {
   }
 
   // Equity curve data
+  const { activeAccount } = useApp();
+  const initialBalance = activeAccount?.initialBalance || 0;
+
   const sorted = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  let running = 0;
+  let running = initialBalance;
   const equityCurve = sorted.map((t) => {
     running += t.pnl;
     return {
