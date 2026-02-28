@@ -1,21 +1,24 @@
 "use client";
+import { useState } from "react";
 import { AppProvider } from "./context/AppContext";
+import { useApp } from "./context/AppContext";
 import Sidebar from "./components/Sidebar";
 import TradePanel from "./components/TradePanel";
+import AddTradeModal from "./components/AddTradeModal";
 import Dashboard from "./pages/Dashboard";
 import ImportPage from "./pages/ImportPage";
 import CalendarPage from "./pages/CalendarPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import JournalPage from "./pages/JournalPage";
-import { useApp } from "./context/AppContext";
 import AccountsPage from "./pages/AccountsPage";
 
 function AppShell() {
   const { activePage, selectedTrade, setSelectedTrade, setTrades, trades } = useApp();
+  const [showAddTrade, setShowAddTrade] = useState(false);
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      <Sidebar />
+      <Sidebar onAddTrade={() => setShowAddTrade(true)} />
 
       <main style={{
         flex: 1, overflow: "auto",
@@ -44,6 +47,10 @@ function AppShell() {
           setSelectedTrade(updated);
         }}
       />
+
+      {showAddTrade && (
+        <AddTradeModal onClose={() => setShowAddTrade(false)} />
+      )}
     </div>
   );
 }

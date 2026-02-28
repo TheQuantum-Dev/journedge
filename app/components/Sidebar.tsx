@@ -16,7 +16,11 @@ const NAV_ITEMS: { icon: any; label: string; id: PageId }[] = [
   { icon: Upload, label: "Import Trades", id: "import" },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onAddTrade: () => void;
+}
+
+export default function Sidebar({ onAddTrade }: SidebarProps) {
   const { activePage, setActivePage, accounts, activeAccount, setActiveAccount } = useApp();
   const [showAccountMenu, setShowAccountMenu] = useState(false);
 
@@ -79,7 +83,10 @@ export default function Sidebar() {
             </div>
             <ChevronDown
               size={12} color="#8888aa"
-              style={{ transform: showAccountMenu ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s ease", flexShrink: 0 }}
+              style={{
+                transform: showAccountMenu ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform 0.15s ease", flexShrink: 0,
+              }}
             />
           </button>
 
@@ -198,7 +205,7 @@ export default function Sidebar() {
       {/* Add Trade Button */}
       <div style={{ padding: "0 12px 16px" }}>
         <button
-          onClick={() => setActivePage("import")}
+          onClick={onAddTrade}
           style={{
             width: "100%", display: "flex", alignItems: "center",
             justifyContent: "center", gap: "8px", padding: "10px",
