@@ -4,7 +4,7 @@ import { useSettings } from "../hooks/useSettings";
 import { useApp } from "../context/AppContext";
 import {
   Palette, Sliders, Database, Info,
-  ExternalLink, RefreshCw, Check, AlertTriangle,
+  ExternalLink, Check, AlertTriangle,
 } from "lucide-react";
 
 const CURRENT_VERSION = "1.2.0";
@@ -180,14 +180,12 @@ export default function SettingsPage() {
   return (
     <>
       <style>{`
-        @keyframes checking {
-          0%   { opacity: 1; transform: scale(1); }
-          50%  { opacity: 0.4; transform: scale(0.85); }
-          100% { opacity: 1; transform: scale(1); }
+        @keyframes blink {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.25; transform: scale(0.5); }
         }
-        .checking-pulse {
-          animation: checking 1.2s ease-in-out infinite;
-          transform-origin: center;
+        .dot-blink {
+          animation: blink 0.9s ease-in-out infinite;
         }
       `}</style>
 
@@ -380,15 +378,29 @@ export default function SettingsPage() {
                   disabled={checkingUpdate}
                   title="Check for updates"
                   style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    display: "flex", alignItems: "center", padding: "2px",
+                    background: "none", border: "none",
+                    cursor: checkingUpdate ? "default" : "pointer",
+                    display: "flex", alignItems: "center", gap: "6px",
+                    padding: "4px 8px", borderRadius: "6px",
+                    transition: "opacity 0.2s ease",
                   }}
                 >
-                  <RefreshCw
-                    size={13}
-                    color="#8888aa"
-                    className={checkingUpdate ? "checking-pulse" : ""}
+                  <div
+                    className={checkingUpdate ? "dot-blink" : ""}
+                    style={{
+                      width: "7px", height: "7px", borderRadius: "50%",
+                      background: checkingUpdate ? "#8888aa" : "var(--accent-green)",
+                      boxShadow: checkingUpdate ? "none" : "0 0 6px var(--accent-green)",
+                      flexShrink: 0,
+                      transition: "background 0.3s ease, box-shadow 0.3s ease",
+                    }}
                   />
+                  <span style={{
+                    fontSize: "11px", color: "#8888aa",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}>
+                    {checkingUpdate ? "Checking..." : "Check for updates"}
+                  </span>
                 </button>
               </div>
             </Row>
