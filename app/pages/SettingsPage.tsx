@@ -2,12 +2,13 @@
 import { useState, useEffect } from "react";
 import { useSettings } from "../hooks/useSettings";
 import { useApp } from "../context/AppContext";
+import ExportPDFButton from "../components/ExportPDFButton";
 import {
   Palette, Sliders, Database, Info,
   ExternalLink, Check, AlertTriangle,
 } from "lucide-react";
 
-const CURRENT_VERSION = "1.2.0";
+const CURRENT_VERSION = "1.3.0";
 const GITHUB_REPO = "TheQuantum-Dev/tradello";
 
 const ACCENT_COLORS = [
@@ -342,6 +343,12 @@ export default function SettingsPage() {
                 {exportDone ? <Check size={13} /> : null}
                 {exportDone ? "Exported" : "Export CSV"}
               </button>
+            </Row>
+            <Row
+              label="Export Report"
+              description="Full performance report with trade history and daily breakdown"
+            >
+              <ExportPDFButton />
             </Row>
             <Row
               label="Clear All Trades"

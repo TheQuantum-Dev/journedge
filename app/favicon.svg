@@ -1,0 +1,31 @@
+<svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="icon-line" x1="7" y1="34" x2="37" y2="11" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00e57a"/>
+      <stop offset="100%" stop-color="#4d9fff"/>
+    </linearGradient>
+    <clipPath id="icon-clip">
+      <rect x="0" y="0" width="44" height="44" rx="10"/>
+    </clipPath>
+  </defs>
+
+  <!-- Dark background -->
+  <rect x="0" y="0" width="44" height="44" rx="10" fill="#111122"/>
+
+  <!-- Chart line — behind the T -->
+  <g clip-path="url(#icon-clip)">
+    <polyline
+      points="7,34 15,27 23,30 37,11"
+      fill="none"
+      stroke="url(#icon-line)"
+      stroke-width="2.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <circle cx="37" cy="11" r="2.8" fill="#4d9fff"/>
+  </g>
+
+  <!-- T mark — rendered on top -->
+  <rect x="9" y="13" width="26" height="4.5" rx="2.25" fill="white"/>
+  <rect x="19.5" y="13" width="5" height="20" rx="2.5" fill="white"/>
+</svg>
