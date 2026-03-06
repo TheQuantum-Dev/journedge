@@ -2,6 +2,21 @@
 
 All notable changes to Tradello are documented here.
 
+## [1.3.0] - 2026-03-06
+
+### New Features
+
+- PDF export with performance summary, trade history and daily breakdown (`5dc082c`)
+
+### Documentation
+
+- added security policy (`700d638`)
+
+### Other Changes
+
+- Update issue templates (`43d19c5`)
+- Add Contributor Covenant Code of Conduct (`d228db0`)
+
 ## [1.2.0] - 2026-03-02
 
 ### New Features
