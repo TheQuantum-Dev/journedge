@@ -2,6 +2,12 @@
 
 All notable changes to Tradello are documented here.
 
+## [2.0.0] - 2026-03-07
+
+### New Features
+
+- export page, journal redesign, PDF logo + journal entries, README dark mode (`1c98068`)
+
 ## [1.3.0] - 2026-03-06
 
 ### New Features
