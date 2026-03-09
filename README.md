@@ -10,7 +10,7 @@
 
 <br /><br />
 
-![Version](https://img.shields.io/badge/version-1.3.0-00e57a?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.1.0-00e57a?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript)
@@ -19,7 +19,7 @@
 
 **An institutional-grade trading journal built for serious traders.**
 
-[Features](#features) · [Getting Started](#getting-started) · [Roadmap](#roadmap) · [Contributing](#contributing)
+[Features](#features) · [Screenshots](#screenshots) · [Getting Started](#getting-started) · [Roadmap](#roadmap) · [Contributing](#contributing)
 
 </div>
 
@@ -30,45 +30,93 @@
 Most trading journals are either too simple to be useful or locked behind expensive subscriptions. Tradello is built differently.
 
 - **Your data stays yours.** Everything runs locally on your machine using SQLite. No cloud, no accounts, no tracking.
-- **Built for serious traders.** Multi-account support, real equity curve tracking, tag-based behavioral analytics, and a structured daily journal — not just a trade log.
+- **Built for serious traders.** Multi-account support, real equity curve tracking, institutional analytics, tag-based behavioral analysis, and a structured daily journal — not just a trade log.
 - **Open source.** The entire codebase is available, auditable, and open to contribution.
+
+---
+
+## Screenshots
+
+### Dashboard
+Real-time stat cards, full trade history table with multi-filter support, and account-scoped P&L tracking.
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+---
+
+### Analytics — Overview
+Equity curve from actual account balance, P&L by symbol, P&L by tag — at a glance view of what's working.
+
+![Analytics Overview](docs/screenshots/analytics-overview.png)
+
+---
+
+### Analytics — Risk Metrics
+Sharpe, Sortino, and Calmar ratios. Drawdown curve over time. Rolling 20-trade win rate to surface consistency trends.
+
+![Analytics Risk Metrics](docs/screenshots/analytics-risk.png)
+
+---
+
+### Analytics — Time Analysis
+P&L by day of week, daily distribution bars, and win rate by tag — detect session-specific patterns and setup quality.
+
+![Analytics Time Analysis](docs/screenshots/analytics-time.png)
+
+---
+
+### Journal
+Day-grouped trade review with inline journal notes, tags, R:R, entry/exit times, and per-day stats.
+
+![Journal](docs/screenshots/journal.png)
+
+---
+
+### Export
+Report builder with date range, ticker, and tag filters. Live PDF preview. Full institutional-grade report generated client-side — data never leaves your machine.
+
+![Export](docs/screenshots/export.png)
 
 ---
 
 ## Features
 
 **Trade Management**
-- Import trades directly from Fidelity CSV exports
+- Import trades from Fidelity CSV exports or re-import a Tradello export — format auto-detected
 - Manual trade entry with live P&L preview and auto symbol detection
 - Multi-account support — track multiple brokers separately with account-scoped data
 - Full trade journal with notes, tags, screenshots, entry/exit times, and R:R ratio
 
 **Dashboard**
 - Real-time filtering by symbol, status, tag, and date range
-- Stat cards that update dynamically based on active filters
-- Full trade history table with click-to-review
+- Stat cards update dynamically based on active filters
+- Full trade history table with click-to-review trade panel
 
 **Analytics**
-- Real equity curve starting from your actual account balance
-- Win rate, profit factor, average win/loss
-- P&L breakdown by symbol and tag
-- Best and worst trade tracking
+- Equity curve starting from actual account balance
+- Sharpe ratio, Sortino ratio, Calmar ratio
+- Max drawdown, drawdown duration, drawdown over time chart
+- Rolling 20-trade win rate
+- Win rate, profit factor, expectancy, average win/loss
+- P&L breakdown by symbol and by tag
+- P&L by day of week with win rate per session
+- Daily P&L distribution — reveals consistency vs spike dependency
+- Win rate by tag — surfaces which setups convert
 
 **Journal**
 - Daily grouped trade review
 - Search and filter by symbol, tag, win/loss status, or notes
-- Per-day P&L, win/loss count, and daily stats strip
+- Per-day P&L, win/loss count, best day, worst day, notes coverage
 
 **Calendar**
 - Monthly P&L calendar view
 - Click any day to see all trades with full detail
 
 **Export**
-- Advanced report builder with filter-based export
-- Filter by date range, ticker, tags, and trade status
-- Choose which sections to include — cover page, stats, daily breakdown, trade history, journal entries
+- Report builder with filter-based export (date range, ticker, status, tags)
+- Choose sections — cover page, performance summary, daily breakdown, trade history, journal entries
 - Live preview before export
-- Generates a full PDF report entirely client-side — your data never leaves your machine
+- Full PDF generated client-side via `@react-pdf/renderer` — your data never leaves your machine
 
 **Settings**
 - Accent color themes — green, blue, purple, orange, pink
@@ -114,18 +162,19 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### First Steps
 
 1. Go to **Accounts** and create your first trading account with your starting balance
-2. Go to **Import Trades** and upload your Fidelity CSV export — or use **Add Trade** to enter manually
-3. Your trades will be linked to your account and visible across Dashboard, Journal, Analytics, and Calendar
+2. Go to **Import Trades** and upload your broker CSV — or use **Add Trade** to enter manually
+3. Your trades will appear across Dashboard, Journal, Analytics, Calendar, and Export
 
 ---
 
 ## Importing Trades
 
-Currently supported brokers via CSV:
+Tradello auto-detects the CSV format on drop — no configuration required.
 
-| Broker | Status |
-|--------|--------|
+| Broker / Format | Status |
+|----------------|--------|
 | Fidelity | ✅ Supported |
+| Tradello Export | ✅ Supported (re-import your own exports) |
 | TD Ameritrade | 🔜 Coming soon |
 | Tastytrade | 🔜 Coming soon |
 | Interactive Brokers | 🔜 Coming soon |
@@ -135,7 +184,7 @@ Currently supported brokers via CSV:
 1. Log into Fidelity and go to **Activity & Orders**
 2. Select your date range
 3. Click **Download** and choose CSV
-4. Upload the file in Tradello under **Import Trades**
+4. Drop the file onto the Import Trades page
 
 ---
 
@@ -154,6 +203,8 @@ tradello/
 │   ├── schema.prisma     # Database schema
 │   └── migrations/       # Migration history
 ├── public/               # Static assets — logos, icons
+├── docs/
+│   └── screenshots/      # README screenshots
 ├── scripts/
 │   └── changelog.js      # Automated changelog generator
 └── public/
@@ -164,18 +215,15 @@ tradello/
 
 ## Roadmap
 
-**v2.0.0 — In Progress**
-- Advanced export page with full report builder
-- Logo integration throughout the app and exported PDFs
-- Journal entries in PDF export
-- Live PDF preview before export
-
-**Upcoming**
+**v2.2.0 — Upcoming**
 - TD Ameritrade, Tastytrade, IBKR CSV import
-- Sharpe ratio, Sortino ratio, drawdown duration
-- MAE/MFE analysis
+- MAE/MFE analysis — entry and exit efficiency scoring
 - Weekly and yearly calendar views
+
+**Future**
 - GitHub Wiki with setup guides and metric explanations
+- Risk of ruin calculator
+- Overtrading and revenge trade detection signals
 
 ---
 

@@ -7,7 +7,7 @@ import {
   ExternalLink, Check, AlertTriangle, FileDown,
 } from "lucide-react";
 
-const CURRENT_VERSION = "2.0.0";
+const CURRENT_VERSION = "2.1.0";
 const GITHUB_REPO = "TheQuantum-Dev/tradello";
 
 const ACCENT_COLORS = [

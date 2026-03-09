@@ -9,10 +9,6 @@ All notable changes to Tradello are documented here.
 - Advanced Analytics Page (`acc5471`)
 - export page, journal redesign, PDF logo + journal entries, README dark mode (`1c98068`)
 
-### Maintenance
-
-- release v2.0.0 (`4282250`)
-
 ## [1.3.0] - 2026-03-06
 
 ### New Features
