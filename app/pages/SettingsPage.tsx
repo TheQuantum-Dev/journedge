@@ -5,17 +5,19 @@ import { useApp } from "../context/AppContext";
 import {
   Palette, Sliders, Database, Info,
   ExternalLink, Check, AlertTriangle, FileDown,
+  Download, RefreshCw, Terminal, Loader, X,
+  CheckCircle2, Circle, AlertCircle, MinusCircle,
 } from "lucide-react";
 
 const CURRENT_VERSION = "2.1.0";
 const GITHUB_REPO = "TheQuantum-Dev/tradello";
 
 const ACCENT_COLORS = [
-  { label: "Green", value: "#00e57a", dim: "rgba(0,229,122,0.12)" },
-  { label: "Blue", value: "#4d9fff", dim: "rgba(77,159,255,0.12)" },
+  { label: "Green",  value: "#00e57a", dim: "rgba(0,229,122,0.12)" },
+  { label: "Blue",   value: "#4d9fff", dim: "rgba(77,159,255,0.12)" },
   { label: "Purple", value: "#a78bfa", dim: "rgba(167,139,250,0.12)" },
   { label: "Orange", value: "#fb923c", dim: "rgba(251,146,60,0.12)" },
-  { label: "Pink", value: "#f472b6", dim: "rgba(244,114,182,0.12)" },
+  { label: "Pink",   value: "#f472b6", dim: "rgba(244,114,182,0.12)" },
 ];
 
 export function applyAccentColor(value: string) {
@@ -26,6 +28,29 @@ export function applyAccentColor(value: string) {
   root.style.setProperty("--accent-dim", color.dim);
   root.style.setProperty("--accent-green-dim", color.dim);
 }
+
+// ── Update step definitions ───────────────────────────────────────────────────
+
+type StepStatus = "pending" | "running" | "complete" | "error" | "skipped";
+
+interface UpdateStep {
+  id: string;
+  label: string;
+  status: StepStatus;
+  message: string;
+}
+
+type UpdatePhase = "idle" | "running" | "restart_required" | "error";
+
+const STEP_DEFS = [
+  { id: "preflight", label: "Environment check" },
+  { id: "stash",     label: "Local changes" },
+  { id: "pull",      label: "Download update" },
+  { id: "install",   label: "Dependencies" },
+  { id: "migrate",   label: "Database" },
+];
+
+// ── Shared styles ─────────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: "8px",
@@ -39,6 +64,8 @@ const linkStyle: React.CSSProperties = {
   color: "#8888aa", fontSize: "12px", textDecoration: "none",
   fontFamily: "'DM Sans', sans-serif",
 };
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function Section({ title, icon: Icon, children }: {
   title: string; icon: any; children: React.ReactNode;
@@ -78,13 +105,9 @@ function Row({ label, description, children }: {
       alignItems: "center", marginBottom: "16px",
     }}>
       <div style={{ flex: 1, marginRight: "24px" }}>
-        <div style={{ fontSize: "13px", fontWeight: "600", color: "#f0f0ff" }}>
-          {label}
-        </div>
+        <div style={{ fontSize: "13px", fontWeight: "600", color: "#f0f0ff" }}>{label}</div>
         {description && (
-          <div style={{ fontSize: "11px", color: "#8888aa", marginTop: "2px" }}>
-            {description}
-          </div>
+          <div style={{ fontSize: "11px", color: "#8888aa", marginTop: "2px" }}>{description}</div>
         )}
       </div>
       <div style={{ flexShrink: 0 }}>{children}</div>
@@ -92,16 +115,39 @@ function Row({ label, description, children }: {
   );
 }
 
+function StepIcon({ status }: { status: StepStatus }) {
+  const size = 15;
+  if (status === "running")  return <Loader size={size} color="#4d9fff" style={{ animation: "spin 1s linear infinite" }} />;
+  if (status === "complete") return <CheckCircle2 size={size} color="#00e57a" />;
+  if (status === "error")    return <AlertCircle size={size} color="#ff4d6a" />;
+  if (status === "skipped")  return <MinusCircle size={size} color="#8888aa" />;
+  return <Circle size={size} color="#333355" />;
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings();
   const { trades, accounts, setActivePage } = useApp();
 
-  const [latestVersion, setLatestVersion] = useState<string | null>(null);
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [updateError, setUpdateError] = useState(false);
-  const [exportDone, setExportDone] = useState(false);
-  const [clearConfirm, setClearConfirm] = useState(false);
-  const [cleared, setCleared] = useState(false);
+  // Version / update checking state
+  const [latestVersion, setLatestVersion]     = useState<string | null>(null);
+  const [checkingUpdate, setCheckingUpdate]   = useState(false);
+  const [updateError, setUpdateError]         = useState(false);
+
+  // Auto-update flow state
+  const [updatePhase, setUpdatePhase]         = useState<UpdatePhase>("idle");
+  const [steps, setSteps]                     = useState<UpdateStep[]>(
+    STEP_DEFS.map((s) => ({ ...s, status: "pending" as StepStatus, message: "" }))
+  );
+  const [errorDetail, setErrorDetail]         = useState("");
+  const [restartLoading, setRestartLoading]   = useState(false);
+  const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
+
+  // Data management state
+  const [exportDone, setExportDone]           = useState(false);
+  const [clearConfirm, setClearConfirm]       = useState(false);
+  const [cleared, setCleared]                 = useState(false);
 
   useEffect(() => {
     if (settings.accentColor) applyAccentColor(settings.accentColor);
@@ -130,8 +176,81 @@ export default function SettingsPage() {
     }
   };
 
-  const isUpToDate = latestVersion === CURRENT_VERSION;
+  // ── Auto-update via SSE ───────────────────────────────────────────────────
+
+  const handleAutoUpdate = () => {
+    setUpdatePhase("running");
+    setErrorDetail("");
+    setSteps(STEP_DEFS.map((s) => ({ ...s, status: "pending" as StepStatus, message: "" })));
+
+    const source = new EventSource("/api/update");
+
+    source.onmessage = (e: MessageEvent) => {
+      const event = JSON.parse(e.data) as {
+        step: string;
+        status: StepStatus;
+        message: string;
+        detail?: string;
+      };
+
+      if (event.step === "complete") {
+        setUpdatePhase("restart_required");
+        source.close();
+        return;
+      }
+
+      if (event.step === "error" || event.status === "error") {
+        setUpdatePhase("error");
+        setErrorDetail(event.detail || event.message);
+        // Mark currently running step as error
+        setSteps((prev) =>
+          prev.map((s) =>
+            s.status === "running" ? { ...s, status: "error", message: event.message } : s
+          )
+        );
+        source.close();
+        return;
+      }
+
+      setSteps((prev) =>
+        prev.map((s) =>
+          s.id === event.step
+            ? { ...s, status: event.status, message: event.message }
+            : s
+        )
+      );
+    };
+
+    source.onerror = () => {
+      setUpdatePhase("error");
+      setErrorDetail("Connection to update server was interrupted.");
+      source.close();
+    };
+  };
+
+  const handleRestart = async () => {
+    setRestartLoading(true);
+    try {
+      await fetch("/api/update/restart", { method: "POST" });
+    } catch {
+      // Expected — server dies before sending response
+    }
+    setRestartLoading(false);
+    setShowRefreshPrompt(true);
+  };
+
+  const resetUpdateState = () => {
+    setUpdatePhase("idle");
+    setErrorDetail("");
+    setSteps(STEP_DEFS.map((s) => ({ ...s, status: "pending" as StepStatus, message: "" })));
+    setShowRefreshPrompt(false);
+  };
+
+  const isUpToDate     = latestVersion === CURRENT_VERSION;
   const updateAvailable = latestVersion && latestVersion !== CURRENT_VERSION;
+  const isUpdateRunning = updatePhase === "running";
+
+  // ── Data management ───────────────────────────────────────────────────────
 
   const handleExport = () => {
     if (trades.length === 0) return;
@@ -177,6 +296,8 @@ export default function SettingsPage() {
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <>
       <style>{`
@@ -184,11 +305,14 @@ export default function SettingsPage() {
           0%, 100% { opacity: 1; transform: scale(1); }
           50%       { opacity: 0.25; transform: scale(0.5); }
         }
-        .dot-blink {
-          animation: blink 0.9s ease-in-out infinite;
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
         }
+        .dot-blink { animation: blink 0.9s ease-in-out infinite; }
       `}</style>
 
+      {/* Page header */}
       <div style={{ marginBottom: "32px" }}>
         <h2 style={{ fontSize: "26px", fontWeight: "700", color: "#f0f0ff", letterSpacing: "-0.5px" }}>
           Settings
@@ -198,39 +322,252 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {updateAvailable && (
+      {/* ── UPDATE AVAILABLE BANNER (idle state) ── */}
+      {updateAvailable && updatePhase === "idle" && (
         <div style={{
-          background: "rgba(251,146,60,0.1)", border: "1px solid #fb923c",
-          borderRadius: "12px", padding: "14px 18px", marginBottom: "20px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
+          background: "rgba(251,146,60,0.08)", border: "1px solid rgba(251,146,60,0.4)",
+          borderRadius: "14px", padding: "18px 20px", marginBottom: "20px",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <AlertTriangle size={16} color="#fb923c" />
-            <div>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: "#f0f0ff" }}>
-                Update available — v{latestVersion}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{
+                width: "38px", height: "38px", borderRadius: "10px",
+                background: "rgba(251,146,60,0.15)",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <Download size={16} color="#fb923c" />
               </div>
-              <div style={{ fontSize: "11px", color: "#8888aa" }}>
-                You are on v{CURRENT_VERSION}
+              <div>
+                <div style={{ fontSize: "14px", fontWeight: "700", color: "#f0f0ff", marginBottom: "2px" }}>
+                  Tradello v{latestVersion} is available
+                </div>
+                <div style={{ fontSize: "12px", color: "#8888aa" }}>
+                  You are on v{CURRENT_VERSION} · Updates your code, dependencies, and database automatically
+                </div>
               </div>
             </div>
+            <div style={{ display: "flex", gap: "10px", flexShrink: 0, marginLeft: "16px" }}>
+              <a
+                href={`https://github.com/${GITHUB_REPO}/releases/latest`}
+                target="_blank" rel="noreferrer"
+                style={{
+                  padding: "8px 14px", borderRadius: "8px",
+                  border: "1px solid rgba(251,146,60,0.4)",
+                  background: "transparent", color: "#fb923c",
+                  fontSize: "12px", fontWeight: "600",
+                  textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
+                  display: "flex", alignItems: "center", gap: "5px",
+                }}
+              >
+                Changelog <ExternalLink size={11} />
+              </a>
+              <button
+                onClick={handleAutoUpdate}
+                style={{
+                  padding: "8px 18px", borderRadius: "8px", border: "none",
+                  background: "#fb923c", color: "#000",
+                  fontSize: "12px", fontWeight: "700",
+                  cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                  display: "flex", alignItems: "center", gap: "6px",
+                }}
+              >
+                <Download size={13} />
+                Update Now
+              </button>
+            </div>
           </div>
-          <a
-            href={`https://github.com/${GITHUB_REPO}/releases/latest`}
-            target="_blank" rel="noreferrer"
-            style={{
-              padding: "7px 14px", borderRadius: "8px",
-              background: "#fb923c", color: "#000", fontSize: "12px",
-              fontWeight: "600", textDecoration: "none",
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            View release
-          </a>
         </div>
       )}
 
-      {isUpToDate && (
+      {/* ── UPDATE PROGRESS CARD (running / restart_required / error states) ── */}
+      {updatePhase !== "idle" && (
+        <div style={{
+          background: "var(--bg-card)", borderRadius: "14px", marginBottom: "20px",
+          border: updatePhase === "error"
+            ? "1px solid rgba(255,77,106,0.4)"
+            : updatePhase === "restart_required"
+            ? "1px solid rgba(0,229,122,0.4)"
+            : "1px solid rgba(77,159,255,0.3)",
+          overflow: "hidden",
+        }}>
+          {/* Card header */}
+          <div style={{
+            padding: "16px 20px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: updatePhase === "error"
+              ? "rgba(255,77,106,0.05)"
+              : updatePhase === "restart_required"
+              ? "rgba(0,229,122,0.05)"
+              : "rgba(77,159,255,0.05)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              {updatePhase === "running" && (
+                <Loader size={16} color="#4d9fff" style={{ animation: "spin 1s linear infinite" }} />
+              )}
+              {updatePhase === "restart_required" && <CheckCircle2 size={16} color="#00e57a" />}
+              {updatePhase === "error" && <AlertCircle size={16} color="#ff4d6a" />}
+              <span style={{
+                fontSize: "14px", fontWeight: "700",
+                color: updatePhase === "error" ? "#ff4d6a" : updatePhase === "restart_required" ? "#00e57a" : "#4d9fff",
+              }}>
+                {updatePhase === "running" && `Installing Tradello v${latestVersion}...`}
+                {updatePhase === "restart_required" && `Tradello v${latestVersion} installed`}
+                {updatePhase === "error" && "Update failed"}
+              </span>
+            </div>
+            {(updatePhase === "error" || updatePhase === "restart_required") && (
+              <button
+                onClick={resetUpdateState}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#8888aa", padding: "2px" }}
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+
+          {/* Step list */}
+          <div style={{ padding: "16px 20px" }}>
+            {steps.map((step, i) => (
+              <div
+                key={step.id}
+                style={{
+                  display: "flex", alignItems: "flex-start", gap: "12px",
+                  padding: "8px 0",
+                  borderBottom: i < steps.length - 1 ? "1px solid var(--border)" : "none",
+                  opacity: step.status === "pending" ? 0.35 : 1,
+                  transition: "opacity 0.2s ease",
+                }}
+              >
+                <div style={{ marginTop: "1px", flexShrink: 0 }}>
+                  <StepIcon status={step.status} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontSize: "13px", fontWeight: "600",
+                    color: step.status === "complete" ? "#00e57a"
+                      : step.status === "error"    ? "#ff4d6a"
+                      : step.status === "running"  ? "#4d9fff"
+                      : "#f0f0ff",
+                  }}>
+                    {step.label}
+                  </div>
+                  {step.message && (
+                    <div style={{ fontSize: "11px", color: "#8888aa", marginTop: "2px" }}>
+                      {step.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Error detail */}
+          {updatePhase === "error" && errorDetail && (
+            <div style={{
+              margin: "0 20px 16px",
+              background: "rgba(255,77,106,0.08)", border: "1px solid rgba(255,77,106,0.2)",
+              borderRadius: "8px", padding: "12px 14px",
+            }}>
+              <div style={{ fontSize: "11px", color: "#ff4d6a", fontFamily: "monospace", lineHeight: "1.5" }}>
+                {errorDetail}
+              </div>
+              <button
+                onClick={handleAutoUpdate}
+                style={{
+                  marginTop: "10px", padding: "6px 14px", borderRadius: "6px",
+                  border: "1px solid rgba(255,77,106,0.3)", background: "transparent",
+                  color: "#ff4d6a", fontSize: "12px", fontWeight: "600",
+                  cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                  display: "flex", alignItems: "center", gap: "6px",
+                }}
+              >
+                <RefreshCw size={12} />
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Restart section */}
+          {updatePhase === "restart_required" && (
+            <div style={{ padding: "0 20px 20px" }}>
+              <div style={{
+                background: "rgba(0,229,122,0.06)", border: "1px solid rgba(0,229,122,0.2)",
+                borderRadius: "10px", padding: "16px",
+              }}>
+                <div style={{ fontSize: "12px", color: "#8888aa", marginBottom: "12px" }}>
+                  All files updated. Restart the server to apply changes.
+                </div>
+
+                {/* Terminal command */}
+                <div style={{
+                  background: "#0a0a12", borderRadius: "8px",
+                  padding: "12px 14px", marginBottom: "14px",
+                  border: "1px solid #1e1e2e",
+                  display: "flex", alignItems: "center", gap: "10px",
+                }}>
+                  <Terminal size={12} color="#8888aa" style={{ flexShrink: 0 }} />
+                  <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#00e57a" }}>
+                    npm run dev
+                  </span>
+                  <button
+                    onClick={() => navigator.clipboard.writeText("npm run dev")}
+                    style={{
+                      marginLeft: "auto", background: "none", border: "none",
+                      cursor: "pointer", color: "#8888aa", fontSize: "10px",
+                      fontFamily: "'DM Sans', sans-serif", flexShrink: 0,
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  {/* Auto-restart button */}
+                  {!showRefreshPrompt ? (
+                    <button
+                      onClick={handleRestart}
+                      disabled={restartLoading}
+                      style={{
+                        padding: "9px 18px", borderRadius: "8px", border: "none",
+                        background: "var(--accent-green)", color: "#000",
+                        fontSize: "13px", fontWeight: "700",
+                        cursor: restartLoading ? "default" : "pointer",
+                        fontFamily: "'DM Sans', sans-serif",
+                        display: "flex", alignItems: "center", gap: "7px",
+                        opacity: restartLoading ? 0.7 : 1,
+                      }}
+                    >
+                      {restartLoading
+                        ? <Loader size={13} style={{ animation: "spin 1s linear infinite" }} />
+                        : <RefreshCw size={13} />
+                      }
+                      {restartLoading ? "Restarting..." : "Restart Server"}
+                    </button>
+                  ) : (
+                    <div style={{
+                      padding: "9px 16px", borderRadius: "8px",
+                      background: "rgba(0,229,122,0.1)", border: "1px solid rgba(0,229,122,0.3)",
+                      fontSize: "12px", color: "#00e57a", fontWeight: "600",
+                      display: "flex", alignItems: "center", gap: "6px",
+                    }}>
+                      <Check size={13} />
+                      Server stopped — refresh this page in a few seconds
+                    </div>
+                  )}
+
+                  <span style={{ fontSize: "11px", color: "#555577" }}>
+                    or restart manually in your terminal
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── UP TO DATE BANNER ── */}
+      {isUpToDate && updatePhase === "idle" && (
         <div style={{
           background: "rgba(0,229,122,0.08)", border: "1px solid rgba(0,229,122,0.3)",
           borderRadius: "12px", padding: "12px 18px", marginBottom: "20px",
@@ -243,7 +580,8 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {updateError && !checkingUpdate && (
+      {/* ── UPDATE CHECK ERROR ── */}
+      {updateError && !checkingUpdate && updatePhase === "idle" && (
         <div style={{
           background: "rgba(136,136,170,0.08)", border: "1px solid var(--border)",
           borderRadius: "12px", padding: "12px 18px", marginBottom: "20px",
@@ -253,7 +591,9 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* ── SETTINGS GRID ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "start" }}>
+
         {/* Left column */}
         <div>
           <Section title="Appearance" icon={Palette}>
@@ -351,11 +691,9 @@ export default function SettingsPage() {
                 onClick={() => setActivePage("export")}
                 style={{
                   padding: "8px 16px", borderRadius: "8px",
-                  border: "1px solid var(--border)",
-                  background: "transparent",
-                  color: "#f0f0ff",
-                  fontSize: "12px", fontWeight: "600", cursor: "pointer",
-                  fontFamily: "'DM Sans', sans-serif",
+                  border: "1px solid var(--border)", background: "transparent",
+                  color: "#f0f0ff", fontSize: "12px", fontWeight: "600",
+                  cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
                   display: "flex", alignItems: "center", gap: "6px",
                 }}
               >
@@ -395,14 +733,15 @@ export default function SettingsPage() {
                 </span>
                 <button
                   onClick={checkForUpdates}
-                  disabled={checkingUpdate}
+                  disabled={checkingUpdate || isUpdateRunning}
                   title="Check for updates"
                   style={{
                     background: "none", border: "none",
-                    cursor: checkingUpdate ? "default" : "pointer",
+                    cursor: (checkingUpdate || isUpdateRunning) ? "default" : "pointer",
                     display: "flex", alignItems: "center", gap: "6px",
                     padding: "4px 8px", borderRadius: "6px",
                     transition: "opacity 0.2s ease",
+                    opacity: isUpdateRunning ? 0.4 : 1,
                   }}
                 >
                   <div
@@ -415,10 +754,7 @@ export default function SettingsPage() {
                       transition: "background 0.3s ease, box-shadow 0.3s ease",
                     }}
                   />
-                  <span style={{
-                    fontSize: "11px", color: "#8888aa",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}>
+                  <span style={{ fontSize: "11px", color: "#8888aa", fontFamily: "'DM Sans', sans-serif" }}>
                     {checkingUpdate ? "Checking..." : "Check for updates"}
                   </span>
                 </button>
