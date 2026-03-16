@@ -2,6 +2,12 @@
 
 All notable changes to Tradello are documented here.
 
+## [2.2.1] - 2026-03-16
+
+### Improvements
+
+- v2.2.1 — remove deprecated components, fix TradePanel import, update README badge (`7597bf6`)
+
 ## [2.2.0] - 2026-03-13
 
 ### New Features
