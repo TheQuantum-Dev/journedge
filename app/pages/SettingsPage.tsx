@@ -9,7 +9,7 @@ import {
   CheckCircle2, Circle, AlertCircle, MinusCircle,
 } from "lucide-react";
 
-const CURRENT_VERSION = "2.2.0";
+const CURRENT_VERSION = "2.2.1";
 const GITHUB_REPO = "TheQuantum-Dev/tradello";
 
 const ACCENT_COLORS = [

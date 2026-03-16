@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { X, Clock, TrendingUp, Tag, Link, FileText, Save, Plus, Image, Trash2 } from "lucide-react";
-import { Trade } from "../lib/parseFidelityCSV";
+import { Trade } from "../lib/types";
 
 interface Props {
   trade: Trade | null;
