@@ -5,7 +5,6 @@
 | Version | Supported |
 |---------|-----------|
 | 2.x.x   | :white_check_mark:       |
-| 2.0.0   | :white_check_mark:        |
 | 1.x.x   | :x:        |
 
 Only the latest release receives security updates. If you are on an older version, please upgrade before reporting.

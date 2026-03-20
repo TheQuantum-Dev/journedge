@@ -10,7 +10,7 @@
 
 <br /><br />
 
-![Version](https://img.shields.io/badge/version-2.2.1-00e57a?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.3.0-00e57a?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript)
@@ -215,10 +215,8 @@ tradello/
 
 ## Roadmap
 
-**v2.2.0 — Upcoming**
-- TD Ameritrade, Tastytrade, IBKR CSV import
-- MAE/MFE analysis — entry and exit efficiency scoring
-- Weekly and yearly calendar views
+**v3.0.0 — Upcoming**
+- Complete Journal redesign
 
 **Future**
 - GitHub Wiki with setup guides and metric explanations

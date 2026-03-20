@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, X, TrendingUp, TrendingDown, Calendar, BarChart2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { Trade } from "../lib/parseFidelityCSV";
+import { Trade } from "../lib/types";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",

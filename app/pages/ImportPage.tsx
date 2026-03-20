@@ -2,8 +2,11 @@
 import { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { Trade } from "../lib/types";
-import { parseFidelityCSV } from "../lib/parseFidelityCSV";
-import { parseTradelloCSV, isTradelloCSV } from "../lib/parseTradelloCSV";
+import { parseFidelityCSV }                          from "../lib/parseFidelityCSV";
+import { parseTradelloCSV, isTradelloCSV }           from "../lib/parseTradelloCSV";
+import { parseTDAmeritradeCSV, isTDAmeritradeCSV }   from "../lib/parseTDAmeritradeCSV";
+import { parseTastytradeCSV, isTastytradeCSV }       from "../lib/parseTastytradeCSV";
+import { parseIBKRCSV, isIBKRCSV }                   from "../lib/parseIBKRCSV";
 import {
   Upload, CheckCircle, AlertCircle, FileText,
   ArrowRight, X, Database, RefreshCw,
@@ -11,37 +14,54 @@ import {
 
 type ParseStatus = "idle" | "success" | "error" | "importing";
 
+type BrokerSource = "tradello" | "fidelity" | "tdameritrade" | "tastytrade" | "ibkr";
+
 interface ParseResult {
   trades: Trade[];
-  source: "tradello" | "fidelity";
-  count: number;
+  source: BrokerSource;
+  count:  number;
 }
 
-function FormatBadge({ source }: { source: "tradello" | "fidelity" }) {
-  const isTradello = source === "tradello";
+const BADGE_CONFIG: Record<BrokerSource, { label: string; color: string; bg: string; border: string }> = {
+  tradello:     { label: "Tradello Export",   color: "#00e57a", bg: "rgba(0,229,122,0.12)",   border: "rgba(0,229,122,0.3)"   },
+  fidelity:     { label: "Fidelity CSV",      color: "#4d9fff", bg: "rgba(77,159,255,0.12)",  border: "rgba(77,159,255,0.3)"  },
+  tdameritrade: { label: "TD Ameritrade CSV", color: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)"  },
+  tastytrade:   { label: "Tastytrade CSV",    color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)" },
+  ibkr:         { label: "IBKR Activity CSV", color: "#f472b6", bg: "rgba(244,114,182,0.12)", border: "rgba(244,114,182,0.3)" },
+};
+
+function FormatBadge({ source }: { source: BrokerSource }) {
+  const cfg = BADGE_CONFIG[source];
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: "5px",
       padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700",
-      background: isTradello ? "rgba(0,229,122,0.12)" : "rgba(77,159,255,0.12)",
-      color: isTradello ? "#00e57a" : "#4d9fff",
-      border: `1px solid ${isTradello ? "rgba(0,229,122,0.3)" : "rgba(77,159,255,0.3)"}`,
+      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
     }}>
       <Database size={10} />
-      {isTradello ? "Tradello Export" : "Fidelity CSV"}
+      {cfg.label}
     </span>
   );
+}
+
+// Fidelity is the fallback — it throws on a hard format mismatch
+function detectAndParse(text: string): { trades: Trade[]; source: BrokerSource } {
+  if (isTradelloCSV(text))    return { trades: parseTradelloCSV(text),    source: "tradello"     };
+  if (isTastytradeCSV(text))  return { trades: parseTastytradeCSV(text),  source: "tastytrade"   };
+  if (isTDAmeritradeCSV(text))return { trades: parseTDAmeritradeCSV(text),source: "tdameritrade" };
+  if (isIBKRCSV(text))        return { trades: parseIBKRCSV(text),        source: "ibkr"         };
+  return { trades: parseFidelityCSV(text), source: "fidelity" };
 }
 
 export default function ImportPage() {
   const { activeAccount, reloadTrades, setActivePage } = useApp();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [dragging, setDragging]       = useState(false);
-  const [status, setStatus]           = useState<ParseStatus>("idle");
-  const [message, setMessage]         = useState("");
-  const [result, setResult]           = useState<ParseResult | null>(null);
-  const [fileName, setFileName]       = useState("");
+  const [dragging, setDragging] = useState(false);
+  const [status,   setStatus]   = useState<ParseStatus>("idle");
+  const [message,  setMessage]  = useState("");
+  const [result,   setResult]   = useState<ParseResult | null>(null);
+  const [fileName, setFileName] = useState("");
 
   const reset = () => {
     setStatus("idle");
@@ -64,21 +84,13 @@ export default function ImportPage() {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
-        let trades: Trade[];
-        let source: "tradello" | "fidelity";
-
-        if (isTradelloCSV(text)) {
-          trades = parseTradelloCSV(text);
-          source = "tradello";
-        } else {
-          trades = parseFidelityCSV(text);
-          source = "fidelity";
-        }
+        const { trades, source } = detectAndParse(text);
 
         if (trades.length === 0) {
           setStatus("error");
           setMessage(
-            "No trades found. Make sure this is a Fidelity trade history export or a Tradello CSV export."
+            "No trades found. Make sure this is a supported broker export or a Tradello CSV. " +
+            "Supported: Fidelity, TD Ameritrade, Tastytrade, Interactive Brokers, Tradello."
           );
           return;
         }
@@ -88,7 +100,7 @@ export default function ImportPage() {
         setMessage(`Found ${trades.length} trade${trades.length !== 1 ? "s" : ""} — ready to import.`);
       } catch (err) {
         setStatus("error");
-        setMessage("Could not parse this file. Check it's a valid Fidelity or Tradello CSV.");
+        setMessage("Could not parse this file. Check it's a valid broker or Tradello CSV.");
       }
     };
     reader.readAsText(file);
@@ -142,7 +154,7 @@ export default function ImportPage() {
         </p>
       </div>
 
-      {/* Format Cards */}
+      {/* Supported broker cards */}
       <div style={{
         display: "grid", gridTemplateColumns: "1fr 1fr",
         gap: "12px", marginBottom: "24px",
@@ -150,27 +162,35 @@ export default function ImportPage() {
         {[
           {
             label: "Tradello Export",
-            desc: "Re-import a CSV you previously exported from Tradello. All journal notes, tags, and trade data are preserved.",
-            color: "#00e57a",
-            bg: "rgba(0,229,122,0.06)",
-            border: "rgba(0,229,122,0.2)",
+            desc:  "Re-import a CSV you previously exported from Tradello. All journal notes, tags, and trade data are preserved.",
+            color: "#00e57a", bg: "rgba(0,229,122,0.06)", border: "rgba(0,229,122,0.2)",
           },
           {
-            label: "Fidelity CSV",
-            desc: "Upload your Fidelity trade history export. Trades are automatically parsed and P&L calculated.",
-            color: "#4d9fff",
-            bg: "rgba(77,159,255,0.06)",
-            border: "rgba(77,159,255,0.2)",
+            label: "Fidelity",
+            desc:  "Upload your Fidelity trade history export. Trades are automatically parsed and P&L calculated.",
+            color: "#4d9fff", bg: "rgba(77,159,255,0.06)", border: "rgba(77,159,255,0.2)",
+          },
+          {
+            label: "TD Ameritrade",
+            desc:  "Upload a TD Ameritrade Transaction History CSV. Works with post-Schwab merger exports.",
+            color: "#fb923c", bg: "rgba(251,146,60,0.06)", border: "rgba(251,146,60,0.2)",
+          },
+          {
+            label: "Tastytrade",
+            desc:  "Upload a Tastytrade transaction history CSV. Options, stocks, and futures are all supported.",
+            color: "#a78bfa", bg: "rgba(167,139,250,0.06)", border: "rgba(167,139,250,0.2)",
+          },
+          {
+            label: "Interactive Brokers",
+            desc:  "Upload an IBKR Activity Statement CSV. Export from Flex Query or the standard Activity Statement.",
+            color: "#f472b6", bg: "rgba(244,114,182,0.06)", border: "rgba(244,114,182,0.2)",
           },
         ].map((card) => (
           <div key={card.label} style={{
             background: card.bg, border: `1px solid ${card.border}`,
             borderRadius: "12px", padding: "16px",
           }}>
-            <div style={{
-              fontSize: "12px", fontWeight: "700",
-              color: card.color, marginBottom: "6px",
-            }}>
+            <div style={{ fontSize: "12px", fontWeight: "700", color: card.color, marginBottom: "6px" }}>
               {card.label}
             </div>
             <div style={{ fontSize: "12px", color: "#8888aa", lineHeight: "1.5" }}>
@@ -180,7 +200,7 @@ export default function ImportPage() {
         ))}
       </div>
 
-      {/* Drop Zone */}
+      {/* Drop zone */}
       <div
         onClick={() => status === "idle" && fileRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); if (status === "idle") setDragging(true); }}
@@ -219,7 +239,7 @@ export default function ImportPage() {
               Drop your CSV here
             </div>
             <div style={{ fontSize: "13px", color: "#8888aa" }}>
-              Tradello export or Fidelity trade history — auto-detected
+              Format is auto-detected — no configuration needed
             </div>
           </>
         )}
@@ -273,7 +293,7 @@ export default function ImportPage() {
         )}
       </div>
 
-      {/* Action Bar */}
+      {/* Confirm bar */}
       {status === "success" && result && (
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -287,6 +307,11 @@ export default function ImportPage() {
             <span style={{ color: "#f0f0ff", fontWeight: "600" }}>
               {activeAccount?.name || "no account"}
             </span>
+            {!activeAccount && (
+              <span style={{ color: "#fb923c", marginLeft: "8px", fontSize: "11px" }}>
+                — create an account first to track equity
+              </span>
+            )}
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <button
@@ -319,7 +344,7 @@ export default function ImportPage() {
         </div>
       )}
 
-      {/* Preview Table */}
+      {/* Preview table */}
       {status === "success" && result && (
         <div style={{ marginTop: "24px" }}>
           <div style={{
@@ -353,7 +378,7 @@ export default function ImportPage() {
                       {trade.underlying}
                     </td>
                     <td style={{ padding: "10px 14px" }}>
-                      {trade.optionType && (
+                      {trade.optionType ? (
                         <span style={{
                           padding: "2px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "700",
                           background: trade.optionType === "call" ? "rgba(77,159,255,0.15)" : "rgba(255,77,106,0.15)",
@@ -361,8 +386,7 @@ export default function ImportPage() {
                         }}>
                           {trade.optionType.toUpperCase()} {trade.strike ? `$${trade.strike}` : ""}
                         </span>
-                      )}
-                      {!trade.optionType && (
+                      ) : (
                         <span style={{
                           padding: "2px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: "700",
                           background: "rgba(255,255,255,0.06)", color: "#8888aa",
@@ -403,7 +427,7 @@ export default function ImportPage() {
       <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          to   { transform: rotate(360deg); }
         }
       `}</style>
     </div>
