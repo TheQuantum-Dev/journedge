@@ -31,7 +31,8 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files
-.env*
+.env
+.env.local
 
 # vercel
 .vercel
@@ -46,3 +47,7 @@ prisma/tradello.db-journal
 
 # uploads
 public/uploads/
+
+
+# backups
+/backups/
