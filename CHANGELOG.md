@@ -2,6 +2,17 @@
 
 All notable changes to Tradello are documented here.
 
+## [2.3.0] - 2026-03-21
+
+### New Features
+
+- added support for TD Ameritrade, Tastytrade and IBKR (`609b4ea`)
+
+### Bug Fixes
+
+- SSE double-close bug, add db backup step, bump to v2.3.0 (`1bd7b78`)
+- track .env.example so install instructions work (`d371850`)
+
 ## [2.2.1] - 2026-03-16
 
 ### Improvements
