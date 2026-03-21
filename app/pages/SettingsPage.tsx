@@ -9,7 +9,7 @@ import {
   CheckCircle2, Circle, AlertCircle, MinusCircle,
 } from "lucide-react";
 
-const CURRENT_VERSION = "2.2.1";
+const CURRENT_VERSION = "2.3.0";
 const GITHUB_REPO = "TheQuantum-Dev/tradello";
 
 const ACCENT_COLORS = [
@@ -44,10 +44,11 @@ type UpdatePhase = "idle" | "running" | "restart_required" | "error";
 
 const STEP_DEFS = [
   { id: "preflight", label: "Environment check" },
-  { id: "stash",     label: "Local changes" },
-  { id: "pull",      label: "Download update" },
-  { id: "install",   label: "Dependencies" },
-  { id: "migrate",   label: "Database" },
+  { id: "backup",    label: "Database backup"   },
+  { id: "stash",     label: "Local changes"     },
+  { id: "pull",      label: "Download update"   },
+  { id: "install",   label: "Dependencies"      },
+  { id: "migrate",   label: "Database"          },
 ];
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
