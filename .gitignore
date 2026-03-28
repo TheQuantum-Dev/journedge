@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -30,7 +28,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env files (should be kept secret)
 .env
 .env.local
 
@@ -41,7 +39,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma_db files
+# prisma_db files 
 prisma/tradello.db
 prisma/tradello.db-journal
 
@@ -49,5 +47,5 @@ prisma/tradello.db-journal
 public/uploads/
 
 
-# backups
+# backups (should be kept secret)
 /backups/

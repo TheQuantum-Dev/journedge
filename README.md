@@ -175,9 +175,9 @@ Tradello auto-detects the CSV format on drop — no configuration required.
 |----------------|--------|
 | Fidelity | ✅ Supported |
 | Tradello Export | ✅ Supported (re-import your own exports) |
-| TD Ameritrade | 🔜 Coming soon |
-| Tastytrade | 🔜 Coming soon |
-| Interactive Brokers | 🔜 Coming soon |
+| TD Ameritrade | ✅ Supported |
+| Tastytrade | ✅ Supported |
+| Interactive Brokers | ✅ Supported |
 
 ### How to export from Fidelity
 
