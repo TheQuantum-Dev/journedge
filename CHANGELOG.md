@@ -2,6 +2,16 @@
 
 All notable changes to Journedge are documented here.
 
+## [3.0.0] - 2026-03-30
+
+### Maintenance
+
+- updated readme and gitignore files (`1b199b7`)
+
+### Other Changes
+
+- rebrand: Tradello → Journedge, v3.0.0 (`c25e192`)
+
 ## [2.3.0] - 2026-03-21
 
 ### New Features
