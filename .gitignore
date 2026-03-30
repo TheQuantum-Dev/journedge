@@ -40,8 +40,8 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma_db files 
-prisma/tradello.db
-prisma/tradello.db-journal
+prisma/journedge.db
+prisma/journedge.db-journal
 
 # uploads
 public/uploads/

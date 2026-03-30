@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { Trade } from "../lib/types";
 import { parseFidelityCSV }                          from "../lib/parseFidelityCSV";
-import { parseTradelloCSV, isTradelloCSV }           from "../lib/parseTradelloCSV";
+import { parseJournedgeCSV, isJournedgeCSV }           from "../lib/parseJournedgeCSV";
 import { parseTDAmeritradeCSV, isTDAmeritradeCSV }   from "../lib/parseTDAmeritradeCSV";
 import { parseTastytradeCSV, isTastytradeCSV }       from "../lib/parseTastytradeCSV";
 import { parseIBKRCSV, isIBKRCSV }                   from "../lib/parseIBKRCSV";
@@ -14,7 +14,7 @@ import {
 
 type ParseStatus = "idle" | "success" | "error" | "importing";
 
-type BrokerSource = "tradello" | "fidelity" | "tdameritrade" | "tastytrade" | "ibkr";
+type BrokerSource = "Journedge" | "fidelity" | "tdameritrade" | "tastytrade" | "ibkr";
 
 interface ParseResult {
   trades: Trade[];
@@ -23,7 +23,7 @@ interface ParseResult {
 }
 
 const BADGE_CONFIG: Record<BrokerSource, { label: string; color: string; bg: string; border: string }> = {
-  tradello:     { label: "Tradello Export",   color: "#00e57a", bg: "rgba(0,229,122,0.12)",   border: "rgba(0,229,122,0.3)"   },
+  Journedge:     { label: "Journedge Export",   color: "#00e57a", bg: "rgba(0,229,122,0.12)",   border: "rgba(0,229,122,0.3)"   },
   fidelity:     { label: "Fidelity CSV",      color: "#4d9fff", bg: "rgba(77,159,255,0.12)",  border: "rgba(77,159,255,0.3)"  },
   tdameritrade: { label: "TD Ameritrade CSV", color: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)"  },
   tastytrade:   { label: "Tastytrade CSV",    color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)" },
@@ -46,7 +46,7 @@ function FormatBadge({ source }: { source: BrokerSource }) {
 
 // Fidelity is the fallback — it throws on a hard format mismatch
 function detectAndParse(text: string): { trades: Trade[]; source: BrokerSource } {
-  if (isTradelloCSV(text))    return { trades: parseTradelloCSV(text),    source: "tradello"     };
+  if (isJournedgeCSV(text))    return { trades: parseJournedgeCSV(text),    source: "Journedge"     };
   if (isTastytradeCSV(text))  return { trades: parseTastytradeCSV(text),  source: "tastytrade"   };
   if (isTDAmeritradeCSV(text))return { trades: parseTDAmeritradeCSV(text),source: "tdameritrade" };
   if (isIBKRCSV(text))        return { trades: parseIBKRCSV(text),        source: "ibkr"         };
@@ -89,8 +89,8 @@ export default function ImportPage() {
         if (trades.length === 0) {
           setStatus("error");
           setMessage(
-            "No trades found. Make sure this is a supported broker export or a Tradello CSV. " +
-            "Supported: Fidelity, TD Ameritrade, Tastytrade, Interactive Brokers, Tradello."
+            "No trades found. Make sure this is a supported broker export or a Journedge CSV. " +
+            "Supported: Fidelity, TD Ameritrade, Tastytrade, Interactive Brokers, Journedge."
           );
           return;
         }
@@ -100,7 +100,7 @@ export default function ImportPage() {
         setMessage(`Found ${trades.length} trade${trades.length !== 1 ? "s" : ""} — ready to import.`);
       } catch (err) {
         setStatus("error");
-        setMessage("Could not parse this file. Check it's a valid broker or Tradello CSV.");
+        setMessage("Could not parse this file. Check it's a valid broker or Journedge CSV.");
       }
     };
     reader.readAsText(file);
@@ -161,8 +161,8 @@ export default function ImportPage() {
       }}>
         {[
           {
-            label: "Tradello Export",
-            desc:  "Re-import a CSV you previously exported from Tradello. All journal notes, tags, and trade data are preserved.",
+            label: "Journedge Export",
+            desc:  "Re-import a CSV you previously exported from Journedge. All journal notes, tags, and trade data are preserved.",
             color: "#00e57a", bg: "rgba(0,229,122,0.06)", border: "rgba(0,229,122,0.2)",
           },
           {

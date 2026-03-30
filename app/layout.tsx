@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tradello",
+  title: "Journedge",
   description: "The open source trading journal built for serious traders.",
   icons: {
     icon: "/icon.svg",
@@ -22,7 +22,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{
           __html: `
             try {
-              var s = localStorage.getItem('tradello_settings');
+              var s = localStorage.getItem('journedge_settings');
               if (s) {
                 var settings = JSON.parse(s);
                 var colorMap = {

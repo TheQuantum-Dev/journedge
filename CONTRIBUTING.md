@@ -1,12 +1,12 @@
-# Contributing to Tradello
+# Contributing to Journedge
 
-Thanks for your interest in contributing. Tradello is built to be a serious tool for serious traders — contributions that add real value to that mission are welcome.
+Thanks for your interest in contributing. Journedge is built to be a serious tool for serious traders — contributions that add real value to that mission are welcome.
 
 ---
 
 ## Before You Start
 
-- Check the [open issues](https://github.com/TheQuantum-Dev/tradello/issues) to avoid duplicate work
+- Check the [open issues](https://github.com/TheQuantum-Dev/journedge/issues) to avoid duplicate work
 - For large features, open an issue first to discuss the approach
 - Keep pull requests focused — one feature or fix per PR
 
@@ -15,8 +15,8 @@ Thanks for your interest in contributing. Tradello is built to be a serious tool
 ## Development Setup
 
 ```bash
-git clone https://github.com/TheQuantum-Dev/tradello.git
-cd tradello
+git clone https://github.com/TheQuantum-Dev/journedge.git
+cd journedge
 npm install
 cp .env.example .env
 npx prisma migrate dev
@@ -38,7 +38,7 @@ npm run dev
 - Do not redefine types locally in components
 
 **Styling**
-- Tradello uses inline styles with CSS variables for theming
+- Journedge uses inline styles with CSS variables for theming
 - CSS variables are defined in `app/globals.css`
 - Do not introduce external CSS frameworks or Tailwind
 
@@ -55,7 +55,7 @@ The most impactful contribution you can make is adding CSV import support for a 
 
 1. Create a new parser file at `app/lib/parse{BrokerName}CSV.ts`
 2. The parser must return `Trade[]` using the shared `Trade` type from `app/lib/types.ts`
-3. Add the new parser to the import flow in `app/components/ImportCSV.tsx`
+3. Add the new parser to the import flow in `app/pages/ImportPage.tsx`
 4. Test with a real CSV export from that broker
 5. Document the export steps in your PR description
 
@@ -87,7 +87,7 @@ High-value contributions include:
 
 - New broker CSV parsers
 - Additional analytics metrics (Sharpe, Sortino, MAE/MFE)
-- Manual trade entry form
+- Manual trade entry improvements
 - Dashboard filtering
 - Performance improvements
 - Bug fixes with clear reproduction steps

@@ -1,4 +1,4 @@
-// All shared types for Tradello
+// All shared types for Journedge
 // Import from here instead of parseFidelityCSV wherever possible
 
 export interface Trade {

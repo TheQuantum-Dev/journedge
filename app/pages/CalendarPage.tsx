@@ -10,26 +10,22 @@ const MONTHS = [
 ];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// Normalize any date string to YYYY-MM-DD for consistent key lookups
 function normalizeDate(dateStr: string): string {
   if (!dateStr) return "";
-  // Handle MM/DD/YYYY → YYYY-MM-DD
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
     const [mm, dd, yyyy] = dateStr.split("/");
     return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
   }
-  // Already YYYY-MM-DD or ISO format — strip time portion if present
   return dateStr.split("T")[0];
 }
 
 export default function CalendarPage() {
-  const { trades } = useApp();
+  const { trades, setSelectedTrade } = useApp();
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  // Normalize all trade dates so lookups always work regardless of import source
   const tradesByDate: Record<string, Trade[]> = {};
   for (const trade of trades) {
     const key = normalizeDate(trade.date);
@@ -54,7 +50,6 @@ export default function CalendarPage() {
     else setCurrentMonth((m) => m + 1);
   };
 
-  // Always produce YYYY-MM-DD to match normalized trade keys
   const formatDate = (day: number): string => {
     const yyyy = String(currentYear);
     const mm = String(currentMonth + 1).padStart(2, "0");
@@ -62,7 +57,6 @@ export default function CalendarPage() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // Monthly stats
   const monthTrades = trades.filter((t) => {
     const normalized = normalizeDate(t.date);
     const d = new Date(normalized);
@@ -72,7 +66,6 @@ export default function CalendarPage() {
   const monthWins = monthTrades.filter((t) => t.pnl > 0);
   const monthLosses = monthTrades.filter((t) => t.pnl < 0);
 
-  // Best / worst trading DAYS this month
   const dailyPnlEntries = Object.entries(pnlByDate).filter(([date]) => {
     const d = new Date(date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -93,6 +86,11 @@ export default function CalendarPage() {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  const handleTradeClick = (trade: Trade) => {
+    setSelectedDay(null);
+    setSelectedTrade(trade);
+  };
+
   return (
     <div>
       {/* Header */}
@@ -106,7 +104,6 @@ export default function CalendarPage() {
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          {/* Monthly Stats Pills */}
           <div style={{ display: "flex", gap: "12px" }}>
             <div style={{
               background: "var(--bg-card)", border: "1px solid var(--border)",
@@ -133,7 +130,6 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          {/* Navigation */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <button onClick={prevMonth} style={{
               background: "var(--bg-card)", border: "1px solid var(--border)",
@@ -161,7 +157,6 @@ export default function CalendarPage() {
         background: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: "16px", overflow: "hidden",
       }}>
-        {/* Day Headers */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid var(--border)" }}>
           {DAYS.map((day) => (
             <div key={day} style={{
@@ -173,9 +168,7 @@ export default function CalendarPage() {
           ))}
         </div>
 
-        {/* Calendar Days */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-          {/* Empty offset cells */}
           {Array.from({ length: firstDay }).map((_, i) => (
             <div key={`empty-${i}`} style={{
               minHeight: "90px",
@@ -185,7 +178,6 @@ export default function CalendarPage() {
             }} />
           ))}
 
-          {/* Day cells */}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
             const dateStr = formatDate(day);
@@ -230,24 +222,19 @@ export default function CalendarPage() {
                       : "rgba(255,77,106,0.07)";
                 }}
               >
-                {/* Left accent bar for trade days */}
                 {hasTrades && (
                   <div style={{
                     position: "absolute", left: 0, top: 0, bottom: 0, width: "3px",
                     background: isWin ? "var(--accent-green)" : "var(--accent-red)",
-                    borderRadius: "0",
                   }} />
                 )}
 
-                {/* Day number */}
                 <div style={{
                   fontSize: "13px",
                   fontWeight: isToday ? "800" : "500",
                   color: isToday ? "#000" : "var(--text-secondary)",
                   marginBottom: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
+                  display: "flex", alignItems: "center", gap: "4px",
                 }}>
                   {isToday ? (
                     <span style={{
@@ -263,7 +250,6 @@ export default function CalendarPage() {
                   )}
                 </div>
 
-                {/* P&L display */}
                 {hasTrades && (
                   <div>
                     <div style={{
@@ -284,10 +270,9 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* ── Monthly Breakdown ── fills the dead space below the calendar */}
+      {/* Monthly Breakdown */}
       {tradingDaysCount > 0 ? (
         <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-          {/* Trading Days */}
           <div style={{
             background: "var(--bg-card)", border: "1px solid var(--border)",
             borderRadius: "14px", padding: "20px",
@@ -307,7 +292,6 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          {/* Avg Daily P&L */}
           <div style={{
             background: "var(--bg-card)", border: "1px solid var(--border)",
             borderRadius: "14px", padding: "20px",
@@ -325,12 +309,9 @@ export default function CalendarPage() {
             }}>
               {avgDailyPnl >= 0 ? "+" : ""}${avgDailyPnl.toFixed(2)}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-              per trading day
-            </div>
+            <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>per trading day</div>
           </div>
 
-          {/* Best Day */}
           <div style={{
             background: "var(--bg-card)",
             border: "1px solid rgba(0,229,122,0.25)",
@@ -351,7 +332,6 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          {/* Worst Day */}
           <div style={{
             background: "var(--bg-card)",
             border: "1px solid rgba(255,77,106,0.25)",
@@ -373,7 +353,6 @@ export default function CalendarPage() {
           </div>
         </div>
       ) : (
-        /* Empty state when no trades in this month */
         <div style={{
           marginTop: "24px", background: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: "14px", padding: "32px", textAlign: "center",
@@ -384,7 +363,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* Day Detail Slide Panel */}
+      {/* Day Detail Panel */}
       {selectedDay && selectedTrades.length > 0 && (
         <>
           <div
@@ -432,16 +411,26 @@ export default function CalendarPage() {
 
             {/* Trade Cards */}
             <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+              <p style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "12px" }}>
+                Click any trade to open the journal panel
+              </p>
               {selectedTrades.map((trade) => (
                 <div
                   key={trade.id}
+                  onClick={() => handleTradeClick(trade)}
                   style={{
                     background: "var(--bg-card)", border: "1px solid var(--border)",
                     borderRadius: "12px", padding: "16px", marginBottom: "12px",
-                    transition: "all 0.15s ease",
+                    cursor: "pointer", transition: "all 0.15s ease",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent-green)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--accent-green)";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -499,7 +488,7 @@ export default function CalendarPage() {
                       borderTop: "1px solid var(--border)", paddingTop: "8px", marginTop: "4px",
                       display: "-webkit-box",
                       WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
+                      WebkitBoxOrient: "vertical" as const,
                       overflow: "hidden",
                     }}>
                       {trade.journalEntry}

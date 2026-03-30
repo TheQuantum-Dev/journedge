@@ -33,7 +33,7 @@ If applicable, add screenshots to help explain the problem.
 
 - OS: (e.g. macOS 14, Windows 11)
 - Browser: (e.g. Chrome 120, Safari 17)
-- Tradello Version: (e.g. v1.2.0)
+- Journedge Version: (e.g. v1.2.0)
 - Node.js Version: (e.g. 18.17.0)
 
 ## Additional Context

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Tradello are documented here.
+All notable changes to Journedge are documented here.
 
 ## [2.3.0] - 2026-03-21
 

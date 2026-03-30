@@ -1,79 +1,83 @@
-# Tradello
+# Journedge
 
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="public/tradello-logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="public/tradello-logo-light.svg">
-  <img alt="Tradello" src="public/tradello-logo-light.svg" width="240" />
+  <source media="(prefers-color-scheme: dark)" srcset="public/journedge-logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="public/journedge-logo-light.svg">
+  <img alt="Journedge" src="public/journedge-logo-light.svg" width="240" />
 </picture>
 
 <br /><br />
 
-![Version](https://img.shields.io/badge/version-2.3.0-00e57a?style=flat-square)
+![Version](https://img.shields.io/badge/version-3.0.0-4d9fff?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)
-![Open Source](https://img.shields.io/badge/open--source-yes-00e57a?style=flat-square)
+![Open Source](https://img.shields.io/badge/open--source-yes-4d9fff?style=flat-square)
 
 **An institutional-grade trading journal built for serious traders.**
 
-[Features](#features) · [Screenshots](#screenshots) · [Getting Started](#getting-started) · [Roadmap](#roadmap) · [Contributing](#contributing)
+[Features](#features) · [Screenshots](#screenshots) · [Getting Started](#getting-started) · [Importing Trades](#importing-trades) · [Analytics](#analytics-engine) · [Roadmap](#roadmap) · [Contributing](#contributing)
 
 </div>
 
 ---
 
-## Why Tradello
+## Why Journedge
 
-Most trading journals are either too simple to be useful or locked behind expensive subscriptions. Tradello is built differently.
+Most trading journals are either too simple to be useful or locked behind expensive subscriptions. Journedge is built differently.
 
-- **Your data stays yours.** Everything runs locally on your machine using SQLite. No cloud, no accounts, no tracking.
-- **Built for serious traders.** Multi-account support, real equity curve tracking, institutional analytics, tag-based behavioral analysis, and a structured daily journal — not just a trade log.
-- **Open source.** The entire codebase is available, auditable, and open to contribution.
+**Your data stays yours.** Everything runs locally on your machine using SQLite. No cloud sync, no user accounts, no telemetry, no third-party data transfers. Your trade history, journal entries, and performance data never leave your machine.
+
+**Built for serious traders.** Multi-account support, real equity curve tracking from actual starting balance, institutional-grade risk analytics, tag-based behavioural analysis, and a structured daily journal — not just a P&L spreadsheet.
+
+**Open source and auditable.** The entire codebase is available, readable, and open to contribution. You can verify exactly what the application does with your data.
+
+> Journedge was previously released as Tradello (v1.0.0 through v2.3.0). The project has been renamed to better reflect its core purpose — turning your journal into your edge. Full history is preserved in [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
 ## Screenshots
 
 ### Dashboard
-Real-time stat cards, full trade history table with multi-filter support, and account-scoped P&L tracking.
+Real-time stat cards, full trade history table with multi-filter support, and account-scoped P&L tracking. Filters by symbol, status, tag, and date range update all metrics dynamically.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
 ---
 
 ### Analytics — Overview
-Equity curve from actual account balance, P&L by symbol, P&L by tag — at a glance view of what's working.
+Equity curve from actual account balance, P&L by symbol, P&L by tag, win/loss breakdown, and streak analysis.
 
 ![Analytics Overview](docs/screenshots/analytics-overview.png)
 
 ---
 
 ### Analytics — Risk Metrics
-Sharpe, Sortino, and Calmar ratios. Drawdown curve over time. Rolling 20-trade win rate to surface consistency trends.
+Sharpe, Sortino, and Calmar ratios with contextual interpretation. Drawdown curve over time with duration tracking. Rolling 20-trade win rate to surface consistency trends.
 
 ![Analytics Risk Metrics](docs/screenshots/analytics-risk.png)
 
 ---
 
 ### Analytics — Time Analysis
-P&L by day of week, daily distribution bars, and win rate by tag — detect session-specific patterns and setup quality.
+P&L and win rate by day of week, daily distribution bars, and win rate by tag — reveals session-specific patterns and setup quality at a glance.
 
 ![Analytics Time Analysis](docs/screenshots/analytics-time.png)
 
 ---
 
 ### Journal
-Day-grouped trade review with inline journal notes, tags, R:R, entry/exit times, and per-day stats.
+Day-grouped trade review with inline journal notes, tags, R:R, entry/exit times, image screenshots, and per-day stats. Searchable and filterable.
 
 ![Journal](docs/screenshots/journal.png)
 
 ---
 
 ### Export
-Report builder with date range, ticker, and tag filters. Live PDF preview. Full institutional-grade report generated client-side — data never leaves your machine.
+Report builder with date range, ticker, tag, and status filters. Live PDF preview. Full institutional-grade report generated entirely client-side.
 
 ![Export](docs/screenshots/export.png)
 
@@ -81,48 +85,83 @@ Report builder with date range, ticker, and tag filters. Live PDF preview. Full 
 
 ## Features
 
-**Trade Management**
-- Import trades from Fidelity CSV exports or re-import a Tradello export — format auto-detected
-- Manual trade entry with live P&L preview and auto symbol detection
-- Multi-account support — track multiple brokers separately with account-scoped data
-- Full trade journal with notes, tags, screenshots, entry/exit times, and R:R ratio
+### Trade Management
 
-**Dashboard**
-- Real-time filtering by symbol, status, tag, and date range
-- Stat cards update dynamically based on active filters
-- Full trade history table with click-to-review trade panel
+- Import trades from five brokers — format is auto-detected on file drop, no configuration required
+- Manual trade entry with live P&L preview, auto symbol detection, and option detail parsing from OCC-format symbols
+- Multi-account support — create separate accounts per broker, switch between them from the sidebar, all analytics and journal data are account-scoped
+- Full trade journal panel — notes, tags, screenshots, entry/exit times, R:R ratio, chart links
+- Idempotent imports — re-importing the same file does not create duplicate trades
 
-**Analytics**
-- Equity curve starting from actual account balance
-- Sharpe ratio, Sortino ratio, Calmar ratio
-- Max drawdown, drawdown duration, drawdown over time chart
-- Rolling 20-trade win rate
-- Win rate, profit factor, expectancy, average win/loss
-- P&L breakdown by symbol and by tag
-- P&L by day of week with win rate per session
-- Daily P&L distribution — reveals consistency vs spike dependency
-- Win rate by tag — surfaces which setups convert
+### Dashboard
 
-**Journal**
-- Daily grouped trade review
-- Search and filter by symbol, tag, win/loss status, or notes
-- Per-day P&L, win/loss count, best day, worst day, notes coverage
+- Stat cards for net P&L, win rate, profit factor, and average loss — all reactive to active filters
+- Filter by symbol, status, tag, date range, and free-text search simultaneously
+- Full trade history table with click-to-open detail panel
+- Active filter count shown inline with one-click clear
 
-**Calendar**
-- Monthly P&L calendar view
-- Click any day to see all trades with full detail
+### Analytics Engine
 
-**Export**
-- Report builder with filter-based export (date range, ticker, status, tags)
-- Choose sections — cover page, performance summary, daily breakdown, trade history, journal entries
-- Live preview before export
-- Full PDF generated client-side via `@react-pdf/renderer` — your data never leaves your machine
+**Performance metrics**
+- Net P&L and equity curve plotted from initial account balance
+- Win rate, profit factor, expectancy expressed in dollars per trade
+- Average win, average loss, best trade, worst trade
+- Maximum win streak, maximum loss streak, current open streak
 
-**Settings**
-- Accent color themes — green, blue, purple, orange, pink
-- Trading preferences — default multiplier, commission, fees
-- Version checker with live update detection
-- Data management — export CSV, clear trades
+**Risk metrics**
+- Sharpe ratio — risk-adjusted return per unit of total volatility, annualised to 252 trading days
+- Sortino ratio — same as Sharpe but penalises only downside deviation, more meaningful for active traders
+- Calmar ratio — annualised return divided by maximum drawdown percentage
+- Maximum drawdown in dollars and percentage from equity peak
+- Longest drawdown duration in days, current open drawdown duration
+
+**Drawdown analysis**
+- Full drawdown curve over time showing percentage deviation from rolling high-water mark
+- Visual identification of drawdown entry and recovery periods
+
+**Consistency analysis**
+- Rolling 20-trade win rate — reveals whether performance is consistent or spike-dependent
+- Daily P&L distribution chart — surfaces reliance on outlier days
+- P&L by day of week with trade count and win rate per session
+
+**R-Multiple analysis**
+- R-multiple histogram using average loss as 1R proxy
+- Average R per trade and expectancy expressed in R units
+- Distribution shape reveals structural edge — positive skew indicates a sound system
+
+**Breakdown analysis**
+- P&L and win rate by underlying symbol — identifies which instruments you trade well
+- P&L and win rate by tag — correlates setup labels with actual performance outcomes
+
+### Journal
+
+- Trades grouped by trading day with per-day P&L, win count, loss count, and win rate
+- Free-text search across journal notes and symbols
+- Filter by win/loss status and by tag independently
+- Stats strip — days traded, best day, worst day, notes coverage ratio
+- Journal entries visible inline with 3-line preview, full entry in trade panel
+
+### Calendar
+
+- Full monthly calendar with per-day P&L and direction colouring
+- Click any day to open a detail panel with all trades and journal entries for that session
+- Monthly stats — trading day count, average daily P&L, best day, worst day
+
+### Export
+
+- Report builder with independent controls for date range, tickers, tags, and trade status
+- Toggle individual report sections — cover page, performance summary, daily breakdown, trade history, journal entries
+- Journal layout options — 1, 2, or 4 entries per page
+- Live scaled preview before generating
+- PDF rendered entirely client-side via `@react-pdf/renderer` — no server involvement, data never transmitted
+
+### Settings
+
+- Accent colour themes — green, blue, purple, orange, pink — applied instantly and persisted across sessions
+- Trading preferences — default options multiplier, commission, and fees pre-fill manual trade entry
+- CSV export for backup or migration to another tool
+- In-app auto-update system — fetches the latest tagged release from GitHub, stashes local changes, runs `npm install` and `prisma migrate deploy`, then prompts for server restart
+- Automatic database backup before every update — last five backups retained in `/backups`
 
 ---
 
@@ -130,12 +169,13 @@ Report builder with date range, ticker, and tag filters. Live PDF preview. Full 
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16.1.6 (App Router, Turbopack) |
 | Language | TypeScript 5 |
 | Database | SQLite via Prisma 5 |
-| Charts | Recharts |
-| PDF | @react-pdf/renderer |
+| Charts | Recharts 3 |
+| PDF | @react-pdf/renderer 4 |
 | Icons | Lucide React |
+| Styling | Inline styles with CSS custom properties |
 
 ---
 
@@ -143,14 +183,14 @@ Report builder with date range, ticker, and tag filters. Live PDF preview. Full 
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20 or higher
 - npm or yarn
 
 ### Installation
 
 ```bash
-git clone https://github.com/TheQuantum-Dev/tradello.git
-cd tradello
+git clone https://github.com/TheQuantum-Dev/journedge.git
+cd journedge
 npm install
 cp .env.example .env
 npx prisma migrate dev
@@ -161,67 +201,133 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### First Steps
 
-1. Go to **Accounts** and create your first trading account with your starting balance
-2. Go to **Import Trades** and upload your broker CSV — or use **Add Trade** to enter manually
-3. Your trades will appear across Dashboard, Journal, Analytics, Calendar, and Export
+1. Go to **Accounts** and create your first trading account — name it, select your broker, and enter your starting balance. This is the baseline the equity curve is calculated from.
+2. Go to **Import Trades** and drop your broker CSV. The format is detected automatically.
+3. Your trades populate immediately across Dashboard, Journal, Analytics, Calendar, and Export.
+4. Open any trade from the Dashboard or Journal to add notes, tags, screenshots, entry/exit times, and R:R ratio.
 
 ---
 
 ## Importing Trades
 
-Tradello auto-detects the CSV format on drop — no configuration required.
+Drop your CSV file onto the Import Trades page. Journedge reads the header row and detects the broker format automatically — no field mapping, no configuration required.
 
-| Broker / Format | Status |
-|----------------|--------|
-| Fidelity | ✅ Supported |
-| Tradello Export | ✅ Supported (re-import your own exports) |
-| TD Ameritrade | ✅ Supported |
-| Tastytrade | ✅ Supported |
-| Interactive Brokers | ✅ Supported |
+| Broker | Status | Notes |
+|--------|--------|-------|
+| Fidelity | ✅ Supported | Export from Activity and Orders |
+| TD Ameritrade | ✅ Supported | Works with post-Schwab merger exports |
+| Tastytrade | ✅ Supported | Options, stocks, and futures supported |
+| Interactive Brokers | ✅ Supported | Export from Flex Query or Activity Statement |
+| Journedge Export | ✅ Supported | Re-import your own exports — all journal data preserved |
 
 ### How to export from Fidelity
 
-1. Log into Fidelity and go to **Activity & Orders**
+1. Log in and go to **Accounts and Trade → Activity and Orders**
 2. Select your date range
 3. Click **Download** and choose CSV
-4. Drop the file onto the Import Trades page
+
+### How to export from Tastytrade
+
+1. Go to **History**
+2. Set your date range
+3. Click **Export** in the top right
+
+### How to export from TD Ameritrade
+
+1. Go to **My Account → History and Statements**
+2. Select **Transactions** and your date range
+3. Export as CSV
+
+### How to export from Interactive Brokers
+
+1. Go to **Reports → Flex Queries** or open an **Activity Statement**
+2. Set format to CSV
+3. Ensure the **Trades** section is included
+
+---
+
+## Architecture Notes
+
+**Database.** SQLite via Prisma. All data is local — no hosted database, no connection strings pointing anywhere external. The database file lives at `prisma/journedge.db` and is gitignored.
+
+**CSV parsers.** Each broker has an isolated parser in `app/lib/`. The import page runs format detection in priority order — Journedge export first, then Tastytrade, TD Ameritrade, IBKR, with Fidelity as the fallback. Parsers return a normalised `Trade[]` and never mutate shared state.
+
+**PDF generation.** `@react-pdf/renderer` runs entirely in the browser. `ExportPDFInner` is dynamically imported with `ssr: false` to prevent the renderer loading in a Node environment. The logo is rasterised from SVG to PNG at mount time via a canvas element before being passed to the document definition.
+
+**Auto-update.** The update endpoint streams progress via Server-Sent Events. Steps run sequentially — git preflight, database backup, local stash, tag checkout, npm install, prisma migrate deploy. The backup step retains the five most recent copies and is non-fatal on failure. The restart endpoint calls `process.exit(0)` after flushing the response.
+
+**State management.** A single React Context holds all trades, accounts, and navigation state. Trades load once on mount and update locally after API calls to avoid full reloads. The active account filters the trade array at render time — no separate fetch per account switch.
 
 ---
 
 ## Project Structure
 
 ```
-tradello/
+journedge/
 ├── app/
-│   ├── api/              # API routes (trades, accounts, uploads)
-│   ├── components/       # Shared UI components
-│   ├── context/          # Global state (AppContext)
-│   ├── hooks/            # Custom hooks (useSettings)
-│   ├── lib/              # Types, Prisma client, CSV parsers, utilities
-│   └── pages/            # Page-level components
+│   ├── api/
+│   │   ├── accounts/            # Account CRUD
+│   │   ├── trades/              # Trade read, write, patch, clear
+│   │   ├── upload/              # Screenshot file uploads
+│   │   └── update/              # Auto-update SSE stream + restart endpoint
+│   ├── components/
+│   │   ├── Sidebar.tsx          # Navigation and account switcher
+│   │   ├── TradePanel.tsx       # Slide-out journal and edit panel
+│   │   ├── AddTradeModal.tsx    # Manual trade entry
+│   │   ├── TradingReportPDF.tsx # PDF document definition
+│   │   └── ExportPDFInner.tsx   # Client-only PDF download wrapper
+│   ├── context/
+│   │   └── AppContext.tsx       # Global state — trades, accounts, navigation
+│   ├── hooks/
+│   │   └── useSettings.ts       # Settings persistence via localStorage
+│   ├── lib/
+│   │   ├── types.ts             # Shared Trade and Account interfaces
+│   │   ├── db.ts                # Prisma client singleton
+│   │   ├── svgToPng.ts          # SVG rasteriser for PDF logo
+│   │   ├── parseFidelityCSV.ts
+│   │   ├── parseTDAmeritradeCSV.ts
+│   │   ├── parseTastytradeCSV.ts
+│   │   ├── parseIBKRCSV.ts
+│   │   └── parseJournedgeCSV.ts  # Journedge export format parser
+│   └── pages/
+│       ├── Dashboard.tsx
+│       ├── JournalPage.tsx
+│       ├── AnalyticsPage.tsx
+│       ├── CalendarPage.tsx
+│       ├── ImportPage.tsx
+│       ├── AccountsPage.tsx
+│       ├── ExportPage.tsx
+│       └── SettingsPage.tsx
 ├── prisma/
-│   ├── schema.prisma     # Database schema
-│   └── migrations/       # Migration history
-├── public/               # Static assets — logos, icons
-├── docs/
-│   └── screenshots/      # README screenshots
+│   ├── schema.prisma            # Database schema
+│   └── migrations/              # Full migration history
+├── public/
+│   ├── journedge-logo-dark.svg
+│   ├── journedge-logo-light.svg
+│   └── journedge-icon.svg
 ├── scripts/
-│   └── changelog.js      # Automated changelog generator
-└── public/
-    └── uploads/          # Local screenshot storage (gitignored)
+│   └── changelog.js             # Automated changelog entry generator
+└── backups/                     # Auto-update database backups (gitignored)
 ```
 
 ---
 
 ## Roadmap
 
-**v3.0.0 — Upcoming**
-- Complete Journal redesign
+**v3.0.0 — Current**
+- Rebrand from Tradello to Journedge
+- New mark, logo, and identity
 
-**Future**
-- GitHub Wiki with setup guides and metric explanations
+**v3.1.0 — In progress**
+- Complete Journal page redesign
+- Improved daily review workflow
+
+**Planned**
 - Risk of ruin calculator
-- Overtrading and revenge trade detection signals
+- Overtrading detection — flags sessions where trade frequency exceeds your statistical baseline
+- Revenge trading detection — flags trades taken within a configurable window after a loss
+- MAE/MFE tracking — maximum adverse and favourable excursion per trade
+- GitHub Wiki — setup guides, metric explanations, broker export walkthroughs
 
 ---
 
@@ -229,17 +335,25 @@ tradello/
 
 Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
 
+The highest-value contributions are new broker CSV parsers. If your broker is not on the supported list, open an issue with a sanitised sample CSV and we can spec the parser together.
+
 ---
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md) for the full release history.
+See [CHANGELOG.md](./CHANGELOG.md) for the full release history going back to v1.0.0.
+
+---
+
+## Security
+
+See [SECURITY.md](./SECURITY.md) for the supported versions and vulnerability disclosure policy.
 
 ---
 
 ## License
 
-Tradello is open source under the [MIT License](./LICENSE).
+Journedge is open source under the [MIT License](./LICENSE).
 
 ---
 

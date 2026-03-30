@@ -27,7 +27,7 @@ function pruneBackups(backupDir: string, keep = 5): void {
   try {
     const files = fs
       .readdirSync(backupDir)
-      .filter((f) => f.startsWith("tradello-") && f.endsWith(".db"))
+      .filter((f) => f.startsWith("journedge-") && f.endsWith(".db"))
       .map((f) => ({ name: f, mtime: fs.statSync(path.join(backupDir, f)).mtimeMs }))
       .sort((a, b) => b.mtime - a.mtime);
 
@@ -65,7 +65,7 @@ export async function GET(_request: NextRequest) {
             message: "Not a git repository",
             detail:
               "Auto-update requires a git-cloned installation. " +
-              "Run: git clone https://github.com/TheQuantum-Dev/tradello",
+              "Run: git clone https://github.com/TheQuantum-Dev/journedge",
           });
           return;
         }
@@ -77,7 +77,7 @@ export async function GET(_request: NextRequest) {
             step: "preflight",
             status: "error",
             message: "No git remote configured",
-            detail: "Run: git remote add origin https://github.com/TheQuantum-Dev/tradello",
+            detail: "Run: git remote add origin https://github.com/TheQuantum-Dev/journedge",
           });
           return;
         }
@@ -86,7 +86,7 @@ export async function GET(_request: NextRequest) {
 
         emit({ step: "backup", status: "running", message: "Backing up database..." });
 
-        const dbPath = path.join(ROOT, "prisma", "tradello.db");
+        const dbPath = path.join(ROOT, "prisma", "journedge.db");
 
         if (!fs.existsSync(dbPath)) {
           emit({ step: "backup", status: "skipped", message: "No database found — skipping" });
@@ -99,7 +99,7 @@ export async function GET(_request: NextRequest) {
               .toISOString()
               .replace(/[:.]/g, "-")
               .slice(0, 19);
-            const dest = path.join(backupDir, `tradello-${ts}.db`);
+            const dest = path.join(backupDir, `journedge-${ts}.db`);
 
             fs.copyFileSync(dbPath, dest);
             pruneBackups(backupDir, 5);
@@ -107,7 +107,7 @@ export async function GET(_request: NextRequest) {
             emit({
               step: "backup",
               status: "complete",
-              message: `Database backed up — tradello-${ts}.db`,
+              message: `Database backed up — journedge-${ts}.db`,
             });
           } catch (err) {
             const detail = err instanceof Error ? err.message : "Unknown error";
@@ -127,7 +127,7 @@ export async function GET(_request: NextRequest) {
 
         if (hasLocalChanges) {
           emit({ step: "stash", status: "running", message: "Stashing local modifications..." });
-          await runCmd('git stash push -m "tradello-pre-update-stash"');
+          await runCmd('git stash push -m "journedge-pre-update-stash"');
           emit({ step: "stash", status: "complete", message: "Local changes stashed safely" });
         } else {
           emit({ step: "stash", status: "skipped", message: "Working tree is clean" });

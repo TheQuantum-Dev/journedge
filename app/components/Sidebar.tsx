@@ -37,8 +37,8 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
       {/* Logo */}
       <div style={{ paddingBottom: "28px" }}>
         <Image
-          src="/tradello-logo-dark.svg"
-          alt="Tradello"
+          src="/journedge-logo-dark.svg"
+          alt="Journedge"
           width={190}
           height={46}
           priority

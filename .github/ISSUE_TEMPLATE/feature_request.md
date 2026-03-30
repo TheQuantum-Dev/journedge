@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an improvement or new feature for Tradello
+about: Suggest an improvement or new feature for Journedge
 title: "[Feature]"
 labels: enhancement
 assignees: ''

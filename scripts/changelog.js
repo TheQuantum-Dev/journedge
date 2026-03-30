@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Tradello Changelog Generator
+ * Journedge Changelog Generator
  * 
  * Usage:
  *   node scripts/changelog.js <version> [tag_from]
@@ -109,7 +109,7 @@ function updateChangelogFile(entry) {
   if (fs.existsSync(changelogPath)) {
     existing = fs.readFileSync(changelogPath, "utf8");
   } else {
-    existing = "# Changelog\n\nAll notable changes to Tradello are documented here.\n\n";
+    existing = "# Changelog\n\nAll notable changes to Journedge are documented here.\n\n";
   }
 
   // Insert new entry after the header

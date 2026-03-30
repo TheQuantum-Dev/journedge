@@ -11,7 +11,7 @@ Only the latest release receives security updates. If you are on an older versio
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Tradello, please do not open a public GitHub issue. Public disclosure before a fix is available puts other users at risk.
+If you discover a security vulnerability in Journedge, please do not open a public GitHub issue. Public disclosure before a fix is available puts other users at risk.
 
 Instead, report it privately by emailing:
 
@@ -27,7 +27,7 @@ You can expect an acknowledgement within 48 hours and a resolution or update wit
 
 ## Scope
 
-Tradello is a locally-run desktop application. It does not have a hosted backend, user accounts, or a public API. The primary security concerns are:
+Journedge is a locally-run desktop application. It does not have a hosted backend, user accounts, or a public API. The primary security concerns are:
 
 - Local database access and data integrity
 - CSV parsing vulnerabilities

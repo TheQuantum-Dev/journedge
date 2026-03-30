@@ -1,0 +1,23 @@
+<svg width="210" height="44" viewBox="0 0 210 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Mark lives in its own viewport so gradient coords stay in 500x500 space -->
+  <svg x="0" y="0" width="44" height="44" viewBox="0 0 500 500">
+    <defs>
+      <linearGradient id="gd" x1="90" y1="430" x2="395" y2="75" gradientUnits="userSpaceOnUse">
+        <stop offset="0%"   stop-color="#4d9fff"/>
+        <stop offset="100%" stop-color="#a78bfa"/>
+      </linearGradient>
+    </defs>
+    <path d="M 90 75 H 395 L 215 255 L 185 225 L 90 320 V 255 L 185 160 L 215 190 L 285 120 H 90 Z" fill="url(#gd)"/>
+    <path d="M 395 115 V 280 A 145 145 0 0 1 115.6 334.4 L 165.2 284.8 A 85 85 0 0 0 215 357.4 V 295 L 275 235 V 361.2 A 85 85 0 0 0 335 280 V 175 Z" fill="url(#gd)"/>
+  </svg>
+
+  <!-- Wordmark -->
+  <text
+    x="52"
+    y="30"
+    font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="800"
+    font-size="20"
+    letter-spacing="-0.8"
+    fill="#f0f0ff">journedge</text>
+</svg>

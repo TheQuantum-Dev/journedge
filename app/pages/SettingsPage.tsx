@@ -9,8 +9,8 @@ import {
   CheckCircle2, Circle, AlertCircle, MinusCircle,
 } from "lucide-react";
 
-const CURRENT_VERSION = "2.3.0";
-const GITHUB_REPO = "TheQuantum-Dev/tradello";
+const CURRENT_VERSION = "3.0.0";
+const GITHUB_REPO = "TheQuantum-Dev/journedge";
 
 const ACCENT_COLORS = [
   { label: "Green",  value: "#00e57a", dim: "rgba(0,229,122,0.12)" },
@@ -28,8 +28,6 @@ export function applyAccentColor(value: string) {
   root.style.setProperty("--accent-dim", color.dim);
   root.style.setProperty("--accent-green-dim", color.dim);
 }
-
-// ── Update step definitions ───────────────────────────────────────────────────
 
 type StepStatus = "pending" | "running" | "complete" | "error" | "skipped";
 
@@ -51,8 +49,6 @@ const STEP_DEFS = [
   { id: "migrate",   label: "Database"          },
 ];
 
-// ── Shared styles ─────────────────────────────────────────────────────────────
-
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: "8px",
   border: "1px solid var(--border)", background: "var(--bg-secondary)",
@@ -65,8 +61,6 @@ const linkStyle: React.CSSProperties = {
   color: "#8888aa", fontSize: "12px", textDecoration: "none",
   fontFamily: "'DM Sans', sans-serif",
 };
-
-// ── Sub-components ────────────────────────────────────────────────────────────
 
 function Section({ title, icon: Icon, children }: {
   title: string; icon: any; children: React.ReactNode;
@@ -125,18 +119,14 @@ function StepIcon({ status }: { status: StepStatus }) {
   return <Circle size={size} color="#333355" />;
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings();
   const { trades, accounts, setActivePage } = useApp();
 
-  // Version / update checking state
   const [latestVersion, setLatestVersion]     = useState<string | null>(null);
   const [checkingUpdate, setCheckingUpdate]   = useState(false);
   const [updateError, setUpdateError]         = useState(false);
 
-  // Auto-update flow state
   const [updatePhase, setUpdatePhase]         = useState<UpdatePhase>("idle");
   const [steps, setSteps]                     = useState<UpdateStep[]>(
     STEP_DEFS.map((s) => ({ ...s, status: "pending" as StepStatus, message: "" }))
@@ -145,7 +135,6 @@ export default function SettingsPage() {
   const [restartLoading, setRestartLoading]   = useState(false);
   const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
 
-  // Data management state
   const [exportDone, setExportDone]           = useState(false);
   const [clearConfirm, setClearConfirm]       = useState(false);
   const [cleared, setCleared]                 = useState(false);
@@ -177,8 +166,6 @@ export default function SettingsPage() {
     }
   };
 
-  // ── Auto-update via SSE ───────────────────────────────────────────────────
-
   const handleAutoUpdate = () => {
     setUpdatePhase("running");
     setErrorDetail("");
@@ -203,7 +190,6 @@ export default function SettingsPage() {
       if (event.step === "error" || event.status === "error") {
         setUpdatePhase("error");
         setErrorDetail(event.detail || event.message);
-        // Mark currently running step as error
         setSteps((prev) =>
           prev.map((s) =>
             s.status === "running" ? { ...s, status: "error", message: event.message } : s
@@ -234,7 +220,7 @@ export default function SettingsPage() {
     try {
       await fetch("/api/update/restart", { method: "POST" });
     } catch {
-      // Expected — server dies before sending response
+      // expected — server stops before responding
     }
     setRestartLoading(false);
     setShowRefreshPrompt(true);
@@ -247,11 +233,9 @@ export default function SettingsPage() {
     setShowRefreshPrompt(false);
   };
 
-  const isUpToDate     = latestVersion === CURRENT_VERSION;
+  const isUpToDate      = latestVersion === CURRENT_VERSION;
   const updateAvailable = latestVersion && latestVersion !== CURRENT_VERSION;
   const isUpdateRunning = updatePhase === "running";
-
-  // ── Data management ───────────────────────────────────────────────────────
 
   const handleExport = () => {
     if (trades.length === 0) return;
@@ -278,7 +262,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `tradello-export-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `journedge-export-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     setExportDone(true);
@@ -297,8 +281,6 @@ export default function SettingsPage() {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <>
       <style>{`
@@ -313,7 +295,6 @@ export default function SettingsPage() {
         .dot-blink { animation: blink 0.9s ease-in-out infinite; }
       `}</style>
 
-      {/* Page header */}
       <div style={{ marginBottom: "32px" }}>
         <h2 style={{ fontSize: "26px", fontWeight: "700", color: "#f0f0ff", letterSpacing: "-0.5px" }}>
           Settings
@@ -323,7 +304,6 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* ── UPDATE AVAILABLE BANNER (idle state) ── */}
       {updateAvailable && updatePhase === "idle" && (
         <div style={{
           background: "rgba(251,146,60,0.08)", border: "1px solid rgba(251,146,60,0.4)",
@@ -340,7 +320,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <div style={{ fontSize: "14px", fontWeight: "700", color: "#f0f0ff", marginBottom: "2px" }}>
-                  Tradello v{latestVersion} is available
+                  Journedge v{latestVersion} is available
                 </div>
                 <div style={{ fontSize: "12px", color: "#8888aa" }}>
                   You are on v{CURRENT_VERSION} · Updates your code, dependencies, and database automatically
@@ -380,7 +360,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ── UPDATE PROGRESS CARD (running / restart_required / error states) ── */}
       {updatePhase !== "idle" && (
         <div style={{
           background: "var(--bg-card)", borderRadius: "14px", marginBottom: "20px",
@@ -391,7 +370,6 @@ export default function SettingsPage() {
             : "1px solid rgba(77,159,255,0.3)",
           overflow: "hidden",
         }}>
-          {/* Card header */}
           <div style={{
             padding: "16px 20px",
             borderBottom: "1px solid var(--border)",
@@ -412,8 +390,8 @@ export default function SettingsPage() {
                 fontSize: "14px", fontWeight: "700",
                 color: updatePhase === "error" ? "#ff4d6a" : updatePhase === "restart_required" ? "#00e57a" : "#4d9fff",
               }}>
-                {updatePhase === "running" && `Installing Tradello v${latestVersion}...`}
-                {updatePhase === "restart_required" && `Tradello v${latestVersion} installed`}
+                {updatePhase === "running" && `Installing Journedge v${latestVersion}...`}
+                {updatePhase === "restart_required" && `Journedge v${latestVersion} installed`}
                 {updatePhase === "error" && "Update failed"}
               </span>
             </div>
@@ -427,7 +405,6 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Step list */}
           <div style={{ padding: "16px 20px" }}>
             {steps.map((step, i) => (
               <div
@@ -463,7 +440,6 @@ export default function SettingsPage() {
             ))}
           </div>
 
-          {/* Error detail */}
           {updatePhase === "error" && errorDetail && (
             <div style={{
               margin: "0 20px 16px",
@@ -489,7 +465,6 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* Restart section */}
           {updatePhase === "restart_required" && (
             <div style={{ padding: "0 20px 20px" }}>
               <div style={{
@@ -499,8 +474,6 @@ export default function SettingsPage() {
                 <div style={{ fontSize: "12px", color: "#8888aa", marginBottom: "12px" }}>
                   All files updated. Restart the server to apply changes.
                 </div>
-
-                {/* Terminal command */}
                 <div style={{
                   background: "#0a0a12", borderRadius: "8px",
                   padding: "12px 14px", marginBottom: "14px",
@@ -522,9 +495,7 @@ export default function SettingsPage() {
                     Copy
                   </button>
                 </div>
-
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  {/* Auto-restart button */}
                   {!showRefreshPrompt ? (
                     <button
                       onClick={handleRestart}
@@ -556,7 +527,6 @@ export default function SettingsPage() {
                       Server stopped — refresh this page in a few seconds
                     </div>
                   )}
-
                   <span style={{ fontSize: "11px", color: "#555577" }}>
                     or restart manually in your terminal
                   </span>
@@ -567,7 +537,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ── UP TO DATE BANNER ── */}
       {isUpToDate && updatePhase === "idle" && (
         <div style={{
           background: "rgba(0,229,122,0.08)", border: "1px solid rgba(0,229,122,0.3)",
@@ -576,12 +545,11 @@ export default function SettingsPage() {
         }}>
           <Check size={14} color="#00e57a" />
           <span style={{ fontSize: "13px", color: "#00e57a", fontWeight: "600" }}>
-            Tradello is up to date — v{CURRENT_VERSION}
+            Journedge is up to date — v{CURRENT_VERSION}
           </span>
         </div>
       )}
 
-      {/* ── UPDATE CHECK ERROR ── */}
       {updateError && !checkingUpdate && updatePhase === "idle" && (
         <div style={{
           background: "rgba(136,136,170,0.08)", border: "1px solid var(--border)",
@@ -592,10 +560,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ── SETTINGS GRID ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "start" }}>
-
-        {/* Left column */}
         <div>
           <Section title="Appearance" icon={Palette}>
             <Row label="Accent Color" description="Applied across the entire interface">
@@ -659,7 +624,6 @@ export default function SettingsPage() {
           </Section>
         </div>
 
-        {/* Right column */}
         <div>
           <Section title="Data Management" icon={Database}>
             <Row
@@ -771,7 +735,7 @@ export default function SettingsPage() {
                 Releases <ExternalLink size={11} />
               </a>
             </Row>
-            <Row label="Contributing" description="Help improve Tradello">
+            <Row label="Contributing" description="Help improve Journedge">
               <a href={`https://github.com/${GITHUB_REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer" style={linkStyle}>
                 CONTRIBUTING.md <ExternalLink size={11} />
               </a>

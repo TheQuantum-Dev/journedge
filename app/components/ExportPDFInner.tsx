@@ -21,10 +21,9 @@ interface Props {
 export default function ExportPDFInner({ trades, account, options, filename }: Props) {
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
 
-  // Convert the SVG logo to a PNG data URL once on mount
-  // react-pdf cannot render SVG files — it needs a rasterised image
   useEffect(() => {
-    svgToPngDataUrl("/tradello-logo-light.svg", 180, 44)
+    svgToPngDataUrl("/journedge-logo-light.svg", 210, 44)
+
       .then(setLogoUrl)
       .catch(() => setLogoUrl(undefined));
   }, []);

@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function PDFExportInner({ trades, account }: Props) {
-  const filename = `tradello-report-${
+  const filename = `Journedge-report-${
     account?.name?.toLowerCase().replace(/\s+/g, "-") || "account"
   }-${new Date().toISOString().split("T")[0]}.pdf`;
 

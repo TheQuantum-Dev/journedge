@@ -4,7 +4,6 @@ import {
 } from "@react-pdf/renderer";
 import { Trade, Account } from "../lib/types";
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
@@ -13,11 +12,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     padding: 48,
   },
-
-  // Cover
   coverHeader: {
     marginBottom: 40,
-    borderBottom: "2px solid #00c464",
+    borderBottom: "2px solid #4d9fff",
     paddingBottom: 28,
     alignItems: "center",
     justifyContent: "center",
@@ -54,8 +51,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     color: "#1a1a2e",
   },
-
-  // Section headings
   sectionTitle: {
     fontSize: 13,
     fontFamily: "Helvetica-Bold",
@@ -65,8 +60,6 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     borderBottom: "1px solid #e0e0f0",
   },
-
-  // Stat cards
   statRow: {
     flexDirection: "row",
     gap: 10,
@@ -102,8 +95,6 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: "#aaa",
   },
-
-  // Daily breakdown
   dayRow: {
     flexDirection: "row",
     paddingVertical: 8,
@@ -127,8 +118,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
     width: 80,
   },
-
-  // Trade history table
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#f0f0f8",
@@ -164,8 +153,6 @@ const styles = StyleSheet.create({
   colExit:   { width: 40, fontSize: 8, color: "#555" },
   colPnl:    { flex: 1,   fontSize: 8, fontFamily: "Helvetica-Bold", textAlign: "right" },
   colStatus: { width: 36, fontSize: 8, fontFamily: "Helvetica-Bold", textAlign: "right" },
-
-  // Journal entries
   journalCard: {
     border: "1px solid #e0e0f0",
     borderRadius: 6,
@@ -203,8 +190,8 @@ const styles = StyleSheet.create({
   },
   journalTag: {
     fontSize: 7,
-    color: "#00b85e",
-    backgroundColor: "#e8fdf4",
+    color: "#4d9fff",
+    backgroundColor: "#eef4ff",
     padding: "2 6",
     borderRadius: 3,
   },
@@ -213,8 +200,6 @@ const styles = StyleSheet.create({
     color: "#444",
     lineHeight: 1.6,
   },
-
-  // Footer
   footer: {
     position: "absolute",
     bottom: 28,
@@ -231,7 +216,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmt(n: number) {
   return `${n >= 0 ? "+" : ""}$${Math.abs(n).toFixed(2)}`;
 }
@@ -250,7 +234,6 @@ interface Props {
   };
 }
 
-// ─── Document ─────────────────────────────────────────────────────────────────
 export default function TradingReportPDF({ trades, account, dateRange, logoUrl, options = {} }: Props) {
   const {
     includeCover = true,
@@ -259,6 +242,7 @@ export default function TradingReportPDF({ trades, account, dateRange, logoUrl, 
     includeTradeHistory = true,
     includeJournal = false,
   } = options;
+
   const wins   = trades.filter((t) => t.status === "win");
   const losses = trades.filter((t) => t.status === "loss");
   const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
@@ -286,23 +270,20 @@ export default function TradingReportPDF({ trades, account, dateRange, logoUrl, 
 
   return (
     <Document>
-      {/* ── Page 1: Summary ── */}
       <Page size="A4" style={styles.page}>
 
-        {/* Header with logo */}
         {includeCover && (
           <View style={styles.coverHeader}>
             <View style={styles.coverBrand}>
               {logoUrl
-                ? <Image src={logoUrl} style={{ width: 200, height: 49 }} />
-                : <Text style={styles.brandWordmark}>tradello</Text>
+                ? <Image src={logoUrl} style={{ width: 210, height: 44 }} />
+                : <Text style={styles.brandWordmark}>journedge</Text>
               }
               <Text style={styles.brandSub}>Trading Performance Report</Text>
             </View>
           </View>
         )}
 
-        {/* Meta */}
         {includeCover && (
           <View style={styles.coverMeta}>
             {account && (
@@ -332,7 +313,6 @@ export default function TradingReportPDF({ trades, account, dateRange, logoUrl, 
           </View>
         )}
 
-        {/* Stats */}
         {includeStats && (
           <>
             <Text style={styles.sectionTitle}>Performance Summary</Text>
@@ -366,7 +346,6 @@ export default function TradingReportPDF({ trades, account, dateRange, logoUrl, 
           </>
         )}
 
-        {/* Daily Breakdown */}
         {includeDailyBreakdown && (
           <>
             <Text style={styles.sectionTitle}>Daily Breakdown</Text>
@@ -388,68 +367,65 @@ export default function TradingReportPDF({ trades, account, dateRange, logoUrl, 
           </>
         )}
 
-        {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>Tradello — Trading Performance Report</Text>
+          <Text style={styles.footerText}>Journedge — Trading Performance Report</Text>
           <Text style={styles.footerText}>{generatedDate}</Text>
         </View>
       </Page>
 
-      {/* ── Page 2+: Trade History ── */}
       {includeTradeHistory && (
-      <Page size="A4" style={{ ...styles.page, paddingTop: 36 }}>
-        <Text style={styles.sectionTitle}>Trade History</Text>
+        <Page size="A4" style={{ ...styles.page, paddingTop: 36 }}>
+          <Text style={styles.sectionTitle}>Trade History</Text>
 
-        <View style={styles.tableHeader}>
-          <Text style={[styles.colDate,   styles.colHeaderText]}>Date</Text>
-          <Text style={[styles.colSymbol, styles.colHeaderText]}>Symbol</Text>
-          <Text style={[styles.colType,   styles.colHeaderText]}>Type</Text>
-          <Text style={[styles.colStrike, styles.colHeaderText]}>Strike</Text>
-          <Text style={[styles.colExpiry, styles.colHeaderText]}>Expiry</Text>
-          <Text style={[styles.colQty,    styles.colHeaderText]}>Qty</Text>
-          <Text style={[styles.colEntry,  styles.colHeaderText]}>Entry</Text>
-          <Text style={[styles.colExit,   styles.colHeaderText]}>Exit</Text>
-          <Text style={[styles.colPnl,    styles.colHeaderText]}>P&L</Text>
-          <Text style={[styles.colStatus, styles.colHeaderText]}>Result</Text>
-        </View>
-
-        {trades.map((t, i) => (
-          <View
-            key={t.id}
-            style={i % 2 === 0 ? styles.tableRow : styles.tableRowAlt}
-            wrap={false}
-          >
-            <Text style={styles.colDate}>{t.date}</Text>
-            <Text style={styles.colSymbol}>{t.underlying}</Text>
-            <Text style={styles.colType}>
-              {t.optionType ? t.optionType.toUpperCase() : t.type.toUpperCase()}
-            </Text>
-            <Text style={styles.colStrike}>{t.strike ? `$${t.strike}` : "—"}</Text>
-            <Text style={styles.colExpiry}>{t.expiry || "—"}</Text>
-            <Text style={styles.colQty}>{t.quantity}</Text>
-            <Text style={styles.colEntry}>${t.entryPrice}</Text>
-            <Text style={styles.colExit}>${t.exitPrice}</Text>
-            <Text style={[styles.colPnl, { color: t.pnl >= 0 ? "#00b85e" : "#cc3355" }]}>
-              {fmt(t.pnl)}
-            </Text>
-            <Text style={[styles.colStatus, { color: t.status === "win" ? "#00b85e" : "#cc3355" }]}>
-              {t.status.toUpperCase()}
-            </Text>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.colDate,   styles.colHeaderText]}>Date</Text>
+            <Text style={[styles.colSymbol, styles.colHeaderText]}>Symbol</Text>
+            <Text style={[styles.colType,   styles.colHeaderText]}>Type</Text>
+            <Text style={[styles.colStrike, styles.colHeaderText]}>Strike</Text>
+            <Text style={[styles.colExpiry, styles.colHeaderText]}>Expiry</Text>
+            <Text style={[styles.colQty,    styles.colHeaderText]}>Qty</Text>
+            <Text style={[styles.colEntry,  styles.colHeaderText]}>Entry</Text>
+            <Text style={[styles.colExit,   styles.colHeaderText]}>Exit</Text>
+            <Text style={[styles.colPnl,    styles.colHeaderText]}>P&L</Text>
+            <Text style={[styles.colStatus, styles.colHeaderText]}>Result</Text>
           </View>
-        ))}
 
-        <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>Tradello — Trading Performance Report</Text>
-          <Text
-            style={styles.footerText}
-            render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
-            fixed
-          />
-        </View>
-      </Page>
+          {trades.map((t, i) => (
+            <View
+              key={t.id}
+              style={i % 2 === 0 ? styles.tableRow : styles.tableRowAlt}
+              wrap={false}
+            >
+              <Text style={styles.colDate}>{t.date}</Text>
+              <Text style={styles.colSymbol}>{t.underlying}</Text>
+              <Text style={styles.colType}>
+                {t.optionType ? t.optionType.toUpperCase() : t.type.toUpperCase()}
+              </Text>
+              <Text style={styles.colStrike}>{t.strike ? `$${t.strike}` : "—"}</Text>
+              <Text style={styles.colExpiry}>{t.expiry || "—"}</Text>
+              <Text style={styles.colQty}>{t.quantity}</Text>
+              <Text style={styles.colEntry}>${t.entryPrice}</Text>
+              <Text style={styles.colExit}>${t.exitPrice}</Text>
+              <Text style={[styles.colPnl, { color: t.pnl >= 0 ? "#00b85e" : "#cc3355" }]}>
+                {fmt(t.pnl)}
+              </Text>
+              <Text style={[styles.colStatus, { color: t.status === "win" ? "#00b85e" : "#cc3355" }]}>
+                {t.status.toUpperCase()}
+              </Text>
+            </View>
+          ))}
+
+          <View style={styles.footer} fixed>
+            <Text style={styles.footerText}>Journedge — Trading Performance Report</Text>
+            <Text
+              style={styles.footerText}
+              render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+              fixed
+            />
+          </View>
+        </Page>
       )}
 
-      {/* ── Journal Entries ── */}
       {includeJournal && (() => {
         const journalTrades = trades.filter((t) => t.journalEntry && t.journalEntry.trim().length > 0);
         if (journalTrades.length === 0) return null;
@@ -464,7 +440,6 @@ export default function TradingReportPDF({ trades, account, dateRange, logoUrl, 
               const tags = Array.isArray(t.tags) ? t.tags as string[] : [];
               return (
                 <View key={t.id} style={styles.journalCard} wrap={false}>
-                  {/* Card header */}
                   <View style={styles.journalCardHeader}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <Text style={styles.journalSymbol}>{t.underlying}</Text>
@@ -479,12 +454,10 @@ export default function TradingReportPDF({ trades, account, dateRange, logoUrl, 
                     </Text>
                   </View>
 
-                  {/* Meta */}
                   <Text style={styles.journalMeta}>
                     {t.date}{t.entryTime ? ` · Entry ${t.entryTime}` : ""}{t.exitTime ? ` · Exit ${t.exitTime}` : ""}{t.rr ? ` · R:R ${t.rr}` : ""}
                   </Text>
 
-                  {/* Tags */}
                   {tags.length > 0 && (
                     <View style={styles.journalTagRow}>
                       {tags.map((tag) => (
@@ -493,14 +466,13 @@ export default function TradingReportPDF({ trades, account, dateRange, logoUrl, 
                     </View>
                   )}
 
-                  {/* Journal text */}
                   <Text style={styles.journalText}>{t.journalEntry}</Text>
                 </View>
               );
             })}
 
             <View style={styles.footer} fixed>
-              <Text style={styles.footerText}>Tradello — Trading Performance Report</Text>
+              <Text style={styles.footerText}>Journedge — Trading Performance Report</Text>
               <Text
                 style={styles.footerText}
                 render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}

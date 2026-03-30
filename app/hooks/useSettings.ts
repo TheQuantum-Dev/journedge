@@ -18,7 +18,7 @@ const DEFAULTS: Settings = {
   currencyFormat: "USD",
 };
 
-const STORAGE_KEY = "tradello_settings";
+const STORAGE_KEY = "journedge_settings";
 
 const COLOR_MAP: Record<string, { dim: string }> = {
   "#00e57a": { dim: "rgba(0,229,122,0.12)" },
@@ -40,7 +40,6 @@ function applyAccentColor(value: string) {
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
 
-  // Load from localStorage and apply accent color immediately on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);

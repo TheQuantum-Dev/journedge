@@ -26,10 +26,10 @@ function AppShell() {
         flex: 1, overflow: "auto",
         background: "var(--bg-primary)", padding: "32px",
       }}>
-        {activePage === "dashboard" && <Dashboard />}
-        {activePage === "journal" && <JournalPage />}
+        {activePage === "dashboard" && <Dashboard onAddTrade={() => setShowAddTrade(true)} />}
+        {activePage === "journal"   && <JournalPage />}
         {activePage === "analytics" && <AnalyticsPage />}
-        {activePage === "calendar" && <CalendarPage />}
+        {activePage === "calendar"  && <CalendarPage />}
         {activePage === "import"    && <ImportPage />}
         {activePage === "accounts"  && <AccountsPage />}
         {activePage === "export"    && <ExportPage />}

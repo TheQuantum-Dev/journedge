@@ -1,10 +1,10 @@
 import { Trade } from "./types";
 
-const TRADELLO_HEADER = "Date,Symbol,Underlying,Type,Direction,Option Type,Strike,Expiry,Quantity,Entry Price,Exit Price,Commission,Fees,P&L,Status,Entry Time,Exit Time,R:R,Tags,Journal,Account ID";
+const JOURNEDGE_HEADER = "Date,Symbol,Underlying,Type,Direction,Option Type,Strike,Expiry,Quantity,Entry Price,Exit Price,Commission,Fees,P&L,Status,Entry Time,Exit Time,R:R,Tags,Journal,Account ID";
 
-export function isTradelloCSV(csvText: string): boolean {
+export function isJournedgeCSV(csvText: string): boolean {
   const firstLine = csvText.split("\n")[0].replace(/"/g, "").trim();
-  return firstLine === TRADELLO_HEADER;
+  return firstLine === JOURNEDGE_HEADER;
 }
 
 function parseCSVLine(line: string): string[] {
@@ -34,9 +34,9 @@ function normalizeDate(raw: string): string {
   return raw;
 }
 
-export function parseTradelloCSV(csvText: string): Trade[] {
+export function parseJournedgeCSV(csvText: string): Trade[] {
   const lines = csvText.split("\n").map((l) => l.trim()).filter(Boolean);
-  if (lines.length < 2) throw new Error("Empty Tradello CSV");
+  if (lines.length < 2) throw new Error("Empty Journedge CSV");
 
   const trades: Trade[] = [];
 
@@ -81,7 +81,7 @@ export function parseTradelloCSV(csvText: string): Trade[] {
         : parsedPnl > 0 ? "win" : parsedPnl < 0 ? "loss" : "breakeven";
 
     const trade: Trade = {
-      id: `tradello-${symbol}-${normalizedDate}-${parsedEntry}-${parsedExit}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `journedge-${symbol}-${normalizedDate}-${parsedEntry}-${parsedExit}-${Math.random().toString(36).slice(2, 7)}`,
       date: normalizedDate,
       symbol,
       underlying,

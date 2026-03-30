@@ -48,10 +48,13 @@ function SelectWrap({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function Dashboard() {
+interface Props {
+  onAddTrade: () => void;
+}
+
+export default function Dashboard({ onAddTrade }: Props) {
   const { trades, setActivePage, setSelectedTrade } = useApp();
 
-  // Filter state
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSymbol, setFilterSymbol] = useState("");
@@ -59,7 +62,6 @@ export default function Dashboard() {
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
 
-  // Unique symbols and tags for dropdowns
   const symbols = useMemo(() => {
     const set = new Set(trades.map((t) => t.underlying));
     return Array.from(set).sort();
@@ -74,7 +76,6 @@ export default function Dashboard() {
     return Array.from(set).sort();
   }, [trades]);
 
-  // Active filter count
   const activeFilterCount = [
     search, filterStatus !== "all" ? filterStatus : "",
     filterSymbol, filterTag, filterFrom, filterTo,
@@ -89,7 +90,6 @@ export default function Dashboard() {
     setFilterTo("");
   };
 
-  // Apply filters
   const filtered = useMemo(() => {
     return trades.filter((t) => {
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
@@ -114,7 +114,6 @@ export default function Dashboard() {
     });
   }, [trades, search, filterStatus, filterSymbol, filterTag, filterFrom, filterTo]);
 
-  // Stats from filtered trades
   const totalPnl = filtered.reduce((sum, t) => sum + t.pnl, 0);
   const wins = filtered.filter((t) => t.status === "win");
   const losses = filtered.filter((t) => t.status === "loss");
@@ -152,7 +151,6 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* Header */}
       <div style={{ marginBottom: "32px" }}>
         <h2 style={{
           fontSize: "26px", fontWeight: "700",
@@ -165,7 +163,6 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Stats */}
       <div style={{
         display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
         gap: "16px", marginBottom: "32px",
@@ -173,7 +170,6 @@ export default function Dashboard() {
         {stats.map((s) => <StatCard key={s.label} {...s} />)}
       </div>
 
-      {/* Empty State */}
       {trades.length === 0 ? (
         <div style={{
           background: "var(--bg-card)", border: "1px dashed var(--border)",
@@ -190,7 +186,7 @@ export default function Dashboard() {
             No trades yet
           </h3>
           <p style={{ color: "var(--text-muted)", fontSize: "14px", marginBottom: "24px" }}>
-            Import your Fidelity CSV or add a trade manually to get started.
+            Import your broker CSV or add a trade manually to get started.
           </p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
             <button
@@ -203,12 +199,15 @@ export default function Dashboard() {
             >
               Import CSV
             </button>
-            <button style={{
-              padding: "10px 20px", borderRadius: "8px",
-              border: "1px solid var(--border)", background: "transparent",
-              color: "var(--text-primary)", fontSize: "13px",
-              fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
-            }}>
+            <button
+              onClick={onAddTrade}
+              style={{
+                padding: "10px 20px", borderRadius: "8px",
+                border: "1px solid var(--border)", background: "transparent",
+                color: "var(--text-primary)", fontSize: "13px",
+                fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
+              }}
+            >
               Add Manually
             </button>
           </div>
@@ -218,7 +217,6 @@ export default function Dashboard() {
           background: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: "16px", overflow: "hidden",
         }}>
-          {/* Table Header */}
           <div style={{
             padding: "20px 24px 0",
             borderBottom: "1px solid var(--border)",
@@ -262,12 +260,10 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Filter Bar */}
             <div style={{
               display: "flex", gap: "10px", flexWrap: "wrap",
               paddingBottom: "16px",
             }}>
-              {/* Search */}
               <div style={{ position: "relative", flex: "1", minWidth: "160px" }}>
                 <Search size={13} color="#8888aa" style={{
                   position: "absolute", left: "10px", top: "50%",
@@ -287,7 +283,6 @@ export default function Dashboard() {
                 />
               </div>
 
-              {/* Status */}
               <SelectWrap>
                 <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={selectStyle}>
                   <option value="all">All Status</option>
@@ -297,7 +292,6 @@ export default function Dashboard() {
                 </select>
               </SelectWrap>
 
-              {/* Symbol */}
               {symbols.length > 0 && (
                 <SelectWrap>
                   <select value={filterSymbol} onChange={(e) => setFilterSymbol(e.target.value)} style={selectStyle}>
@@ -307,7 +301,6 @@ export default function Dashboard() {
                 </SelectWrap>
               )}
 
-              {/* Tag */}
               {allTags.length > 0 && (
                 <SelectWrap>
                   <select value={filterTag} onChange={(e) => setFilterTag(e.target.value)} style={selectStyle}>
@@ -317,33 +310,22 @@ export default function Dashboard() {
                 </SelectWrap>
               )}
 
-              {/* Date From */}
               <input
                 type="date"
                 value={filterFrom}
                 onChange={(e) => setFilterFrom(e.target.value)}
-                style={{
-                  ...selectStyle,
-                  padding: "8px 12px",
-                  colorScheme: "dark",
-                }}
+                style={{ ...selectStyle, padding: "8px 12px", colorScheme: "dark" }}
               />
 
-              {/* Date To */}
               <input
                 type="date"
                 value={filterTo}
                 onChange={(e) => setFilterTo(e.target.value)}
-                style={{
-                  ...selectStyle,
-                  padding: "8px 12px",
-                  colorScheme: "dark",
-                }}
+                style={{ ...selectStyle, padding: "8px 12px", colorScheme: "dark" }}
               />
             </div>
           </div>
 
-          {/* Table */}
           {filtered.length === 0 ? (
             <div style={{ padding: "48px", textAlign: "center", color: "#8888aa", fontSize: "14px" }}>
               No trades match your filters.{" "}
