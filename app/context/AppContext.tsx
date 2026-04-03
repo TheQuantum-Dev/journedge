@@ -1,14 +1,22 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { Trade, Account, PageId } from "../lib/types";
+
+interface Tag {
+  id: string;
+  name: string;
+}
 
 interface AppContextType {
   activePage: PageId;
   setActivePage: (page: PageId) => void;
+  activeTradeId: string | null;
+  setActiveTradeId: (id: string | null) => void;
   trades: Trade[];
   allTrades: Trade[];
   setTrades: (trades: Trade[]) => void;
   reloadTrades: () => Promise<void>;
+  updateTradeInMemory: (id: string, patch: Partial<Trade>) => void;
   selectedTrade: Trade | null;
   setSelectedTrade: (trade: Trade | null) => void;
   loading: boolean;
@@ -16,6 +24,9 @@ interface AppContextType {
   activeAccount: Account | null;
   setActiveAccount: (account: Account) => void;
   addAccount: (account: Account) => void;
+  tags: Tag[];
+  reloadTags: () => Promise<void>;
+  addTag: (name: string) => Promise<Tag | null>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -30,13 +41,14 @@ function parseTrades(data: Trade[]): Trade[] {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [activePage, setActivePage] = useState<PageId>("dashboard");
+  const [activeTradeId, setActiveTradeId] = useState<string | null>(null);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [activeAccount, setActiveAccountState] = useState<Account | null>(null);
+  const [tags, setTags] = useState<Tag[]>([]);
 
-  // Trades filtered by active account
   const trades = activeAccount
     ? allTrades.filter((t) => t.accountId === activeAccount.id)
     : allTrades;
@@ -51,7 +63,66 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Load trades on mount
+  // Patch a single trade in memory without a full reload — used by autosave
+  const updateTradeInMemory = useCallback((id: string, patch: Partial<Trade>) => {
+    setAllTrades((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...patch } : t))
+    );
+  }, []);
+
+  const reloadTags = useCallback(async () => {
+    try {
+      const res = await fetch("/api/tags");
+      const data = await res.json();
+      if (Array.isArray(data)) setTags(data);
+    } catch (err) {
+      console.error("Failed to load tags:", err);
+    }
+  }, []);
+
+  const addTag = async (name: string): Promise<Tag | null> => {
+    try {
+      const res = await fetch("/api/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) return null;
+      const tag = await res.json();
+      setTags((prev) => {
+        if (prev.find((t) => t.name === tag.name)) return prev;
+        return [...prev, tag].sort((a, b) => a.name.localeCompare(b.name));
+      });
+      return tag;
+    } catch {
+      return null;
+    }
+  };
+
+  const seedTagsFromTrades = async (trades: Trade[]) => {
+    const existingRes = await fetch("/api/tags");
+    const existing: Tag[] = await existingRes.json();
+    const existingNames = new Set(existing.map((t) => t.name));
+
+    const allTagNames = new Set<string>();
+    for (const trade of trades) {
+      const tradeTags = Array.isArray(trade.tags) ? trade.tags as string[] : [];
+      tradeTags.forEach((tag) => allTagNames.add(tag));
+    }
+
+    const missing = Array.from(allTagNames).filter((name) => !existingNames.has(name));
+    for (const name of missing) {
+      await fetch("/api/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+    }
+
+    if (missing.length > 0) await reloadTags();
+    else setTags(existing);
+  };
+
   useEffect(() => {
     const load = async () => {
       await reloadTrades();
@@ -60,7 +131,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     load();
   }, []);
 
-  // Load accounts on mount
+  useEffect(() => {
+    if (allTrades.length > 0) {
+      seedTagsFromTrades(allTrades);
+    } else {
+      reloadTags();
+    }
+  }, [allTrades.length > 0]);
+
   useEffect(() => {
     const loadAccounts = async () => {
       try {
@@ -78,11 +156,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setTrades = (newTrades: Trade[]) => setAllTrades(newTrades);
-
-  const setActiveAccount = (account: Account) => {
-    setActiveAccountState(account);
-  };
-
+  const setActiveAccount = (account: Account) => setActiveAccountState(account);
   const addAccount = (account: Account) => {
     setAccounts((prev) => [...prev, account]);
     if (!activeAccount) setActiveAccountState(account);
@@ -91,10 +165,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       activePage, setActivePage,
-      trades, allTrades, setTrades, reloadTrades,
+      activeTradeId, setActiveTradeId,
+      trades, allTrades, setTrades, reloadTrades, updateTradeInMemory,
       selectedTrade, setSelectedTrade,
       loading,
       accounts, activeAccount, setActiveAccount, addAccount,
+      tags, reloadTags, addTag,
     }}>
       {children}
     </AppContext.Provider>

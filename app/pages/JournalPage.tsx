@@ -5,7 +5,7 @@ import { Trade } from "../lib/types";
 import {
   ChevronDown, ChevronUp, Search, Tag,
   TrendingUp, TrendingDown, BookOpen,
-  Clock, MessageSquare, Image as ImageIcon,
+  MessageSquare, Image as ImageIcon, ExternalLink,
 } from "lucide-react";
 
 interface DayGroup {
@@ -32,20 +32,26 @@ function groupByDay(trades: Trade[]): DayGroup[] {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-function TradeCard({ trade, onOpen }: { trade: Trade; onOpen: (t: Trade) => void }) {
+function TradeCard({
+  trade,
+  onOpen,
+  onOpenEditor,
+}: {
+  trade: Trade;
+  onOpen: (t: Trade) => void;
+  onOpenEditor: (t: Trade) => void;
+}) {
   const tags = Array.isArray(trade.tags) ? trade.tags : [];
   const images = Array.isArray(trade.imageUrls) ? trade.imageUrls : [];
   const isWin = trade.pnl >= 0;
 
   return (
     <div
-      onClick={() => onOpen(trade)}
       style={{
         background: "var(--bg-secondary)",
         borderRadius: "12px",
         border: "1px solid var(--border)",
         overflow: "hidden",
-        cursor: "pointer",
         transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
       }}
       onMouseEnter={(e) => {
@@ -110,22 +116,6 @@ function TradeCard({ trade, onOpen }: { trade: Trade; onOpen: (t: Trade) => void
 
         {/* Meta row */}
         <div style={{ display: "flex", gap: "14px", marginBottom: "10px", flexWrap: "wrap" }}>
-          {(trade.entryTime || trade.exitTime) && (
-            <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--text-muted)" }}>
-              <Clock size={10} />
-              {trade.entryTime && `In ${trade.entryTime}`}
-              {trade.entryTime && trade.exitTime && " · "}
-              {trade.exitTime && `Out ${trade.exitTime}`}
-            </span>
-          )}
-          {trade.rr && (
-            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-              R:R {trade.rr}
-            </span>
-          )}
-          <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-            Qty {trade.quantity}
-          </span>
           {images.length > 0 && (
             <span style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--text-muted)" }}>
               <ImageIcon size={10} />
@@ -160,56 +150,103 @@ function TradeCard({ trade, onOpen }: { trade: Trade; onOpen: (t: Trade) => void
         {trade.journalEntry && (
           <div style={{
             background: "var(--bg-card)", borderRadius: "8px",
-            padding: "10px 12px", marginBottom: images.length ? "10px" : "0",
+            padding: "10px 12px",
             borderLeft: "3px solid var(--accent-green)",
+            marginBottom: "10px",
           }}>
             <p style={{
               fontSize: "12px", color: "var(--text-secondary)",
               lineHeight: "1.6", margin: 0,
               display: "-webkit-box",
-              WebkitLineClamp: 3,
+              WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical" as const,
               overflow: "hidden",
             }}>
-              {trade.journalEntry}
+              {(() => {
+                try {
+                  const doc = JSON.parse(trade.journalEntry!);
+                  if (doc?.type === "doc" && Array.isArray(doc.content)) {
+                    return doc.content
+                      .flatMap((node: any) =>
+                        Array.isArray(node.content)
+                          ? node.content.filter((n: any) => n.type === "text").map((n: any) => n.text)
+                          : []
+                      )
+                      .join(" ")
+                      .trim() || "No text content";
+                  }
+                } catch {}
+                return trade.journalEntry;
+              })()}
             </p>
           </div>
         )}
 
-        {/* Image thumbnails */}
-        {images.length > 0 && (
-          <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
-            {images.slice(0, 4).map((url: string, i: number) => (
-              <img
-                key={i} src={url} alt="chart"
-                style={{ width: "56px", height: "42px", borderRadius: "6px", objectFit: "cover", border: "1px solid var(--border)" }}
-              />
-            ))}
-            {images.length > 4 && (
-              <div style={{
-                width: "56px", height: "42px", borderRadius: "6px",
-                background: "var(--bg-card)", display: "flex",
-                alignItems: "center", justifyContent: "center",
-                fontSize: "11px", color: "var(--text-muted)",
-                border: "1px solid var(--border)",
-              }}>
-                +{images.length - 4}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Actions */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => onOpen(trade)}
+            style={{
+              flex: 1, padding: "7px 12px", borderRadius: "7px",
+              border: "1px solid var(--border)", background: "transparent",
+              color: "var(--text-muted)", fontSize: "11px", fontWeight: "600",
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--text-muted)";
+              e.currentTarget.style.color = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border)";
+              e.currentTarget.style.color = "var(--text-muted)";
+            }}
+          >
+            Quick View
+          </button>
+          <button
+            onClick={() => onOpenEditor(trade)}
+            style={{
+              flex: 2, padding: "7px 12px", borderRadius: "7px",
+              border: "1px solid var(--accent-green)",
+              background: "var(--accent-green-dim)",
+              color: "var(--accent-green)", fontSize: "11px", fontWeight: "700",
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--accent-green)";
+              e.currentTarget.style.color = "#000";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--accent-green-dim)";
+              e.currentTarget.style.color = "var(--accent-green)";
+            }}
+          >
+            <ExternalLink size={11} />
+            Open Journal
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function DayCard({ group, onOpenTrade }: { group: DayGroup; onOpenTrade: (t: Trade) => void }) {
+function DayCard({
+  group,
+  onOpenTrade,
+  onOpenEditor,
+}: {
+  group: DayGroup;
+  onOpenTrade: (t: Trade) => void;
+  onOpenEditor: (t: Trade) => void;
+}) {
   const [expanded, setExpanded] = useState(true);
   const isGreen = group.totalPnl >= 0;
   const winRate = group.trades.length > 0
     ? Math.round((group.wins / group.trades.length) * 100) : 0;
 
-  // Normalize date — Fidelity exports MM/DD/YYYY, we need YYYY-MM-DD for reliable parsing
   const rawDate = group.date;
   let normalized = rawDate;
   if (rawDate.includes("/")) {
@@ -225,7 +262,6 @@ function DayCard({ group, onOpenTrade }: { group: DayGroup; onOpenTrade: (t: Tra
       background: "var(--bg-card)", border: "1px solid var(--border)",
       borderRadius: "16px", overflow: "hidden", marginBottom: "20px",
     }}>
-      {/* Day header */}
       <button
         onClick={() => setExpanded(!expanded)}
         style={{
@@ -236,7 +272,6 @@ function DayCard({ group, onOpenTrade }: { group: DayGroup; onOpenTrade: (t: Tra
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          {/* Date */}
           <div style={{ textAlign: "left" }}>
             <div style={{ fontSize: "15px", fontWeight: "700", color: "var(--text-primary)" }}>
               {dateLabel}
@@ -246,7 +281,6 @@ function DayCard({ group, onOpenTrade }: { group: DayGroup; onOpenTrade: (t: Tra
             </div>
           </div>
 
-          {/* Pills */}
           <div style={{ display: "flex", gap: "6px" }}>
             {group.wins > 0 && (
               <span style={{
@@ -270,13 +304,11 @@ function DayCard({ group, onOpenTrade }: { group: DayGroup; onOpenTrade: (t: Tra
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ textAlign: "right" }}>
-            <div style={{
-              fontSize: "20px", fontWeight: "800",
-              color: isGreen ? "#00e57a" : "#ff4d6a",
-            }}>
-              {isGreen ? "+" : ""}${group.totalPnl.toFixed(2)}
-            </div>
+          <div style={{
+            fontSize: "20px", fontWeight: "800",
+            color: isGreen ? "#00e57a" : "#ff4d6a",
+          }}>
+            {isGreen ? "+" : ""}${group.totalPnl.toFixed(2)}
           </div>
           <div style={{
             width: "28px", height: "28px", borderRadius: "8px",
@@ -291,11 +323,20 @@ function DayCard({ group, onOpenTrade }: { group: DayGroup; onOpenTrade: (t: Tra
         </div>
       </button>
 
-      {/* Trade cards */}
       {expanded && (
-        <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "10px" }}>
+        <div style={{
+          padding: "16px",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
+          gap: "10px",
+        }}>
           {group.trades.map((trade) => (
-            <TradeCard key={trade.id} trade={trade} onOpen={onOpenTrade} />
+            <TradeCard
+              key={trade.id}
+              trade={trade}
+              onOpen={onOpenTrade}
+              onOpenEditor={onOpenEditor}
+            />
           ))}
         </div>
       )}
@@ -304,7 +345,7 @@ function DayCard({ group, onOpenTrade }: { group: DayGroup; onOpenTrade: (t: Tra
 }
 
 export default function JournalPage() {
-  const { trades, setSelectedTrade } = useApp();
+  const { trades, setSelectedTrade, setActivePage, setActiveTradeId } = useApp();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "win" | "loss">("all");
   const [filterTag, setFilterTag] = useState("");
@@ -334,10 +375,19 @@ export default function JournalPage() {
 
   const groups = useMemo(() => groupByDay(filtered), [filtered]);
 
-  const bestDay = groups.length > 0 ? groups.reduce((b, g) => g.totalPnl > b ? g.totalPnl : b, -Infinity) : 0;
-  const worstDay = groups.length > 0 ? groups.reduce((w, g) => g.totalPnl < w ? g.totalPnl : w, Infinity) : 0;
-  const avgDay = groups.length > 0 ? groups.reduce((s, g) => s + g.totalPnl, 0) / groups.length : 0;
   const journalledTrades = trades.filter((t) => t.journalEntry).length;
+  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
+  const bestDay = groups.length > 0
+    ? groups.reduce((b, g) => g.totalPnl > b ? g.totalPnl : b, -Infinity)
+    : 0;
+  const worstDay = groups.length > 0
+    ? groups.reduce((w, g) => g.totalPnl < w ? g.totalPnl : w, Infinity)
+    : 0;
+
+  const openEditor = (trade: Trade) => {
+    setActiveTradeId(trade.id);
+    setActivePage("journal-editor");
+  };
 
   if (trades.length === 0) {
     return (
@@ -368,28 +418,64 @@ export default function JournalPage() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: "24px" }}>
-        <h2 style={{ fontSize: "28px", fontWeight: "800", color: "var(--text-primary)", letterSpacing: "-0.5px", marginBottom: "4px" }}>
+        <h2 style={{
+          fontSize: "28px", fontWeight: "800", color: "var(--text-primary)",
+          letterSpacing: "-0.5px", marginBottom: "4px",
+        }}>
           Journal
         </h2>
         <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
-          Your trading diary — review every day and every trade
+          Review every trade. Build your edge.
         </p>
       </div>
 
-      {/* Stats Strip */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "24px" }}>
+      {/* Stats strip */}
+      <div style={{
+        display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
+        gap: "12px", marginBottom: "24px",
+      }}>
         {[
-          { label: "Days Traded", value: String(groups.length), color: "var(--accent-green)", icon: BookOpen },
-          { label: "Best Day", value: `+$${bestDay === -Infinity || bestDay === 0 ? "0.00" : bestDay.toFixed(2)}`, color: "#00e57a", icon: TrendingUp },
-          { label: "Worst Day", value: `$${worstDay === Infinity || worstDay === 0 ? "0.00" : worstDay.toFixed(2)}`, color: "#ff4d6a", icon: TrendingDown },
-          { label: "Notes Written", value: `${journalledTrades} / ${trades.length}`, color: "var(--accent-green)", icon: MessageSquare },
+          {
+            label: "Days Traded",
+            value: String(groups.length),
+            color: "var(--text-primary)",
+            icon: BookOpen,
+          },
+          {
+            label: "Best Day",
+            value: bestDay === -Infinity || bestDay === 0
+              ? "$0.00"
+              : `+$${bestDay.toFixed(2)}`,
+            color: "#00e57a",
+            icon: TrendingUp,
+          },
+          {
+            label: "Worst Day",
+            value: worstDay === Infinity || worstDay === 0
+              ? "$0.00"
+              : `$${worstDay.toFixed(2)}`,
+            color: "#ff4d6a",
+            icon: TrendingDown,
+          },
+          {
+            label: "Notes Written",
+            value: `${journalledTrades} / ${trades.length}`,
+            color: "var(--accent-green)",
+            icon: MessageSquare,
+          },
         ].map(({ label, value, color, icon: Icon }) => (
           <div key={label} style={{
             background: "var(--bg-card)", border: "1px solid var(--border)",
             borderRadius: "12px", padding: "16px 18px",
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-              <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              alignItems: "center", marginBottom: "10px",
+            }}>
+              <span style={{
+                fontSize: "11px", fontWeight: "600", color: "var(--text-muted)",
+                textTransform: "uppercase", letterSpacing: "0.5px",
+              }}>
                 {label}
               </span>
               <div style={{
@@ -406,10 +492,16 @@ export default function JournalPage() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "24px", alignItems: "center", flexWrap: "wrap" }}>
-        {/* Search */}
+      <div style={{
+        display: "flex", gap: "10px", marginBottom: "24px",
+        alignItems: "center", flexWrap: "wrap",
+      }}>
         <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
-          <Search size={14} color="var(--text-muted)" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+          <Search
+            size={14}
+            color="var(--text-muted)"
+            style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }}
+          />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -419,11 +511,11 @@ export default function JournalPage() {
               border: "1px solid var(--border)", background: "var(--bg-card)",
               color: "var(--text-primary)", fontSize: "13px",
               fontFamily: "'DM Sans', sans-serif", boxSizing: "border-box" as const,
+              outline: "none",
             }}
           />
         </div>
 
-        {/* Status filter */}
         <div style={{ display: "flex", gap: "6px" }}>
           {(["all", "win", "loss"] as const).map((status) => (
             <button
@@ -449,10 +541,13 @@ export default function JournalPage() {
           ))}
         </div>
 
-        {/* Tag filter */}
         {allTags.length > 0 && (
           <div style={{ position: "relative" }}>
-            <Tag size={12} color="var(--text-muted)" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
+            <Tag
+              size={12}
+              color="var(--text-muted)"
+              style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }}
+            />
             <select
               value={filterTag}
               onChange={(e) => setFilterTag(e.target.value)}
@@ -462,6 +557,7 @@ export default function JournalPage() {
                 color: filterTag ? "var(--accent-green)" : "var(--text-muted)",
                 fontSize: "12px", fontFamily: "'DM Sans', sans-serif",
                 cursor: "pointer", appearance: "none" as const,
+                outline: "none",
               }}
             >
               <option value="">All Tags</option>
@@ -475,7 +571,10 @@ export default function JournalPage() {
 
       {/* Day groups */}
       {groups.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "64px", color: "var(--text-muted)", fontSize: "14px" }}>
+        <div style={{
+          textAlign: "center", padding: "64px",
+          color: "var(--text-muted)", fontSize: "14px",
+        }}>
           No trades match your filters
         </div>
       ) : (
@@ -484,6 +583,7 @@ export default function JournalPage() {
             key={group.date}
             group={group}
             onOpenTrade={(trade) => setSelectedTrade(trade)}
+            onOpenEditor={openEditor}
           />
         ))
       )}

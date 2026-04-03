@@ -166,7 +166,7 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
       {/* Nav Items */}
       <nav style={{ flex: 1, padding: "0 12px" }}>
         {NAV_ITEMS.map(({ icon: Icon, label, id }) => {
-          const active = activePage === id;
+          const active = activePage === id || (id === "journal" && activePage === "journal-editor");
           return (
             <button
               key={id}

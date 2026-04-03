@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Trade } from "../lib/types";
 import { X, ChevronDown } from "lucide-react";
+import TagSelector from "./TagSelector";
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: "8px",
@@ -34,7 +35,6 @@ function SelectWrap({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Detect if symbol is option, future, or stock
 function detectType(symbol: string): string {
   const clean = symbol.trim().toUpperCase();
   if (clean.startsWith("-") || /[A-Z]+\d{6}[CP]\d+/.test(clean)) return "option";
@@ -42,7 +42,6 @@ function detectType(symbol: string): string {
   return "stock";
 }
 
-// Parse option details from symbol like SPXW260220C6955
 function parseOptionSymbol(symbol: string) {
   const clean = symbol.replace(/^-/, "").trim().toUpperCase();
   const match = clean.match(/^([A-Z]+)(\d{2})(\d{2})(\d{2})([CP])(\d+\.?\d*)$/);
@@ -55,7 +54,6 @@ function parseOptionSymbol(symbol: string) {
   };
 }
 
-// Calculate P&L based on trade type
 function calcPnl(
   type: string, direction: string,
   entryPrice: number, exitPrice: number,
@@ -68,12 +66,6 @@ function calcPnl(
   return parseFloat((gross - commission - fees).toFixed(2));
 }
 
-const PRESET_TAGS = [
-  "A+ Setup", "B Setup", "FOMO", "Revenge Trade",
-  "Followed Plan", "Broke Rules", "News Play",
-  "Trend Follow", "Reversal", "Overtraded",
-];
-
 interface Props {
   onClose: () => void;
 }
@@ -81,34 +73,27 @@ interface Props {
 export default function AddTradeModal({ onClose }: Props) {
   const { activeAccount, reloadTrades } = useApp();
 
-  // Core fields
-  const [symbol, setSymbol] = useState("");
-  const [type, setType] = useState("option");
-  const [direction, setDirection] = useState("long");
+  const [symbol, setSymbol]         = useState("");
+  const [type, setType]             = useState("option");
+  const [direction, setDirection]   = useState("long");
   const [optionType, setOptionType] = useState("call");
   const [underlying, setUnderlying] = useState("");
-  const [strike, setStrike] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [date, setDate] = useState(new Date().toLocaleDateString("en-US"));
-  const [entryTime, setEntryTime] = useState("");
-  const [exitTime, setExitTime] = useState("");
+  const [strike, setStrike]         = useState("");
+  const [expiry, setExpiry]         = useState("");
+  const [date, setDate]             = useState(new Date().toLocaleDateString("en-US"));
+  const [entryTime, setEntryTime]   = useState("");
+  const [exitTime, setExitTime]     = useState("");
   const [entryPrice, setEntryPrice] = useState("");
-  const [exitPrice, setExitPrice] = useState("");
-  const [quantity, setQuantity] = useState("1");
+  const [exitPrice, setExitPrice]   = useState("");
+  const [quantity, setQuantity]     = useState("1");
   const [commission, setCommission] = useState("0");
-  const [fees, setFees] = useState("0");
-
-  // Journal fields
-  const [rr, setRr] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [fees, setFees]             = useState("0");
+  const [rr, setRr]                 = useState("");
+  const [tags, setTags]             = useState<string[]>([]);
   const [journalEntry, setJournalEntry] = useState("");
-  const [customTag, setCustomTag] = useState("");
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState("");
 
-  // UI state
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  // Live P&L preview
   const livePnl = entryPrice && exitPrice && quantity
     ? calcPnl(
         type, direction,
@@ -118,7 +103,6 @@ export default function AddTradeModal({ onClose }: Props) {
       )
     : null;
 
-  // Auto-detect type and parse option fields when symbol changes
   useEffect(() => {
     if (!symbol) return;
     const detected = detectType(symbol);
@@ -135,12 +119,6 @@ export default function AddTradeModal({ onClose }: Props) {
       setUnderlying(symbol.replace(/^\//, "").toUpperCase());
     }
   }, [symbol]);
-
-  const toggleTag = (tag: string) => {
-    setTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
 
   const handleSave = async () => {
     if (!symbol.trim()) return setError("Symbol is required");
@@ -192,11 +170,10 @@ export default function AddTradeModal({ onClose }: Props) {
           accountId: activeAccount?.id || null,
         }),
       });
-
       if (!res.ok) throw new Error("Failed to save trade");
       await reloadTrades();
       onClose();
-    } catch (err) {
+    } catch {
       setError("Failed to save trade. Please try again.");
     } finally {
       setSaving(false);
@@ -205,16 +182,11 @@ export default function AddTradeModal({ onClose }: Props) {
 
   return (
     <>
-      {/* Backdrop */}
       <div
         onClick={onClose}
-        style={{
-          position: "fixed", inset: 0,
-          background: "rgba(0,0,0,0.6)", zIndex: 200,
-        }}
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200 }}
       />
 
-      {/* Modal */}
       <div style={{
         position: "fixed", top: "50%", left: "50%",
         transform: "translate(-50%, -50%)",
@@ -259,7 +231,7 @@ export default function AddTradeModal({ onClose }: Props) {
             </div>
           )}
 
-          {/* Live P&L Preview */}
+          {/* Live P&L preview */}
           {livePnl !== null && (
             <div style={{
               background: livePnl >= 0 ? "rgba(0,229,122,0.08)" : "rgba(255,77,106,0.08)",
@@ -278,7 +250,6 @@ export default function AddTradeModal({ onClose }: Props) {
             </div>
           )}
 
-          {/* Section: Trade Details */}
           <p style={{ fontSize: "11px", fontWeight: "700", color: "#8888aa", marginBottom: "12px", letterSpacing: "0.5px" }}>
             TRADE DETAILS
           </p>
@@ -300,7 +271,6 @@ export default function AddTradeModal({ onClose }: Props) {
               )}
             </div>
 
-            {/* Direction */}
             <div>
               <label style={labelStyle}>Direction</label>
               <SelectWrap>
@@ -311,7 +281,6 @@ export default function AddTradeModal({ onClose }: Props) {
               </SelectWrap>
             </div>
 
-            {/* Date */}
             <div>
               <label style={labelStyle}>Date</label>
               <input
@@ -322,71 +291,56 @@ export default function AddTradeModal({ onClose }: Props) {
               />
             </div>
 
-            {/* Entry Price */}
             <div>
               <label style={labelStyle}>Entry Price</label>
               <input
                 value={entryPrice}
                 onChange={(e) => setEntryPrice(e.target.value)}
-                placeholder="0.00"
-                type="number"
-                step="0.01"
+                placeholder="0.00" type="number" step="0.01"
                 style={inputStyle}
               />
             </div>
 
-            {/* Exit Price */}
             <div>
               <label style={labelStyle}>Exit Price</label>
               <input
                 value={exitPrice}
                 onChange={(e) => setExitPrice(e.target.value)}
-                placeholder="0.00"
-                type="number"
-                step="0.01"
+                placeholder="0.00" type="number" step="0.01"
                 style={inputStyle}
               />
             </div>
 
-            {/* Quantity */}
             <div>
               <label style={labelStyle}>Quantity</label>
               <input
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                placeholder="1"
-                type="number"
+                placeholder="1" type="number"
                 style={inputStyle}
               />
             </div>
 
-            {/* Commission */}
             <div>
               <label style={labelStyle}>Commission</label>
               <input
                 value={commission}
                 onChange={(e) => setCommission(e.target.value)}
-                placeholder="0.00"
-                type="number"
-                step="0.01"
+                placeholder="0.00" type="number" step="0.01"
                 style={inputStyle}
               />
             </div>
 
-            {/* Fees */}
             <div>
               <label style={labelStyle}>Fees</label>
               <input
                 value={fees}
                 onChange={(e) => setFees(e.target.value)}
-                placeholder="0.00"
-                type="number"
-                step="0.01"
+                placeholder="0.00" type="number" step="0.01"
                 style={inputStyle}
               />
             </div>
 
-            {/* Entry Time */}
             <div>
               <label style={labelStyle}>Entry Time</label>
               <input
@@ -397,7 +351,6 @@ export default function AddTradeModal({ onClose }: Props) {
               />
             </div>
 
-            {/* Exit Time */}
             <div>
               <label style={labelStyle}>Exit Time</label>
               <input
@@ -408,7 +361,6 @@ export default function AddTradeModal({ onClose }: Props) {
               />
             </div>
 
-            {/* R:R */}
             <div>
               <label style={labelStyle}>R:R Ratio</label>
               <input
@@ -420,7 +372,7 @@ export default function AddTradeModal({ onClose }: Props) {
             </div>
           </div>
 
-          {/* Option specific fields */}
+          {/* Option details */}
           {type === "option" && (
             <>
               <p style={{ fontSize: "11px", fontWeight: "700", color: "#8888aa", marginBottom: "12px", letterSpacing: "0.5px" }}>
@@ -441,8 +393,7 @@ export default function AddTradeModal({ onClose }: Props) {
                   <input
                     value={strike}
                     onChange={(e) => setStrike(e.target.value)}
-                    placeholder="0.00"
-                    type="number"
+                    placeholder="0.00" type="number"
                     style={inputStyle}
                   />
                 </div>
@@ -463,40 +414,11 @@ export default function AddTradeModal({ onClose }: Props) {
           <p style={{ fontSize: "11px", fontWeight: "700", color: "#8888aa", marginBottom: "12px", letterSpacing: "0.5px" }}>
             TAGS
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "8px" }}>
-            {PRESET_TAGS.map((tag) => (
-              <button
-                key={tag}
-                onClick={() => toggleTag(tag)}
-                style={{
-                  padding: "5px 12px", borderRadius: "20px", fontSize: "12px",
-                  fontWeight: "600", cursor: "pointer", border: "1px solid",
-                  fontFamily: "'DM Sans', sans-serif",
-                  borderColor: tags.includes(tag) ? "#00e57a" : "var(--border)",
-                  background: tags.includes(tag) ? "rgba(0,229,122,0.1)" : "transparent",
-                  color: tags.includes(tag) ? "#00e57a" : "#8888aa",
-                }}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
-            <input
-              value={customTag}
-              onChange={(e) => setCustomTag(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && customTag.trim()) {
-                  toggleTag(customTag.trim());
-                  setCustomTag("");
-                }
-              }}
-              placeholder="Custom tag — press Enter"
-              style={{ ...inputStyle, flex: 1 }}
-            />
+          <div style={{ marginBottom: "20px" }}>
+            <TagSelector selected={tags} onChange={setTags} maxHeight={200} />
           </div>
 
-          {/* Journal Notes */}
+          {/* Journal notes */}
           <p style={{ fontSize: "11px", fontWeight: "700", color: "#8888aa", marginBottom: "12px", letterSpacing: "0.5px" }}>
             JOURNAL NOTES
           </p>
@@ -513,7 +435,6 @@ export default function AddTradeModal({ onClose }: Props) {
             }}
           />
 
-          {/* Actions */}
           <div style={{ display: "flex", gap: "12px" }}>
             <button
               onClick={handleSave}

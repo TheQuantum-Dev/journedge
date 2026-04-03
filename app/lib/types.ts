@@ -1,6 +1,3 @@
-// All shared types for Journedge
-// Import from here instead of parseFidelityCSV wherever possible
-
 export interface Trade {
   id: string;
   date: string;
@@ -37,12 +34,27 @@ export interface Account {
   createdAt: string;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+}
+
+export interface JournalTemplate {
+  id: string;
+  name: string;
+  content: string;
+  scope: string;
+  createdAt: string;
+}
+
 export type PageId =
   | "dashboard"
   | "journal"
+  | "journal-editor"
   | "analytics"
   | "calendar"
   | "import"
   | "accounts"
   | "settings"
   | "export";
+  

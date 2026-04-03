@@ -45,3 +45,16 @@ model Trade {
   account      Account? @relation(fields: [accountId], references: [id])
   createdAt    DateTime @default(now())
 }
+
+model JournalTemplate {
+  id        String   @id
+  name      String
+  content   String
+  scope     String   @default("all")
+  createdAt DateTime @default(now())
+}
+
+model Tag {
+  id   String @id
+  name String @unique
+}

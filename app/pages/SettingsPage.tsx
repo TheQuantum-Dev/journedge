@@ -9,7 +9,7 @@ import {
   CheckCircle2, Circle, AlertCircle, MinusCircle,
 } from "lucide-react";
 
-const CURRENT_VERSION = "3.0.0";
+const CURRENT_VERSION = "3.1.0";
 const GITHUB_REPO = "TheQuantum-Dev/journedge";
 
 const ACCENT_COLORS = [
