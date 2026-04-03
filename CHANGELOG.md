@@ -2,6 +2,16 @@
 
 All notable changes to Journedge are documented here.
 
+## [3.1.0] - 2026-04-03
+
+### New Features
+
+- v3.1.0 — journal editor, tag system, templates (`181223a`)
+
+### Bug Fixes
+
+- correct filename missed in previous release (`c8f8acb`)
+
 ## [3.0.0] - 2026-03-30
 
 ### Maintenance
