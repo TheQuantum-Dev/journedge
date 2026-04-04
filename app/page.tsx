@@ -48,7 +48,7 @@ function AppShell() {
             textAlign: "center", marginTop: "48px",
             color: "var(--text-muted)", fontSize: "12px",
           }}>
-            Made with love by The Quantum Dev
+            Made with ❤️ by The Quantum Dev
           </div>
         )}
       </main>
