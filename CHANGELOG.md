@@ -2,6 +2,16 @@
 
 All notable changes to Journedge are documented here.
 
+## [3.1.1] - 2026-04-06
+
+### New Features
+
+- robust update pipeline — shadow install, env detection, semver comparison, backup verification (`3cc1b35`)
+
+### Maintenance
+
+- changed love back to ❤️ (`575fe08`)
+
 ## [3.1.0] - 2026-04-03
 
 ### New Features
