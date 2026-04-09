@@ -9,7 +9,7 @@ import {
   CheckCircle2, Circle, AlertCircle, MinusCircle,
 } from "lucide-react";
 
-const CURRENT_VERSION = "3.1.1";
+const CURRENT_VERSION = "3.2.0";
 const GITHUB_REPO = "TheQuantum-Dev/journedge";
 
 const ACCENT_COLORS = [
@@ -306,7 +306,7 @@ export default function SettingsPage() {
 
       {updateAvailable && updatePhase === "idle" && (
         <div style={{
-          background: "rgba(251,146,60,0.08)", border: "1px solid rgba(251,146,60,0.4)",
+          background: "var(--accent-green-dim)", border: "1px solid var(--accent-green)",
           borderRadius: "14px", padding: "18px 20px", marginBottom: "20px",
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -316,7 +316,7 @@ export default function SettingsPage() {
                 background: "rgba(251,146,60,0.15)",
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
               }}>
-                <Download size={16} color="#fb923c" />
+                <Download size={16} color="var(--accent-green)" />
               </div>
               <div>
                 <div style={{ fontSize: "14px", fontWeight: "700", color: "#f0f0ff", marginBottom: "2px" }}>
@@ -333,8 +333,8 @@ export default function SettingsPage() {
                 target="_blank" rel="noreferrer"
                 style={{
                   padding: "8px 14px", borderRadius: "8px",
-                  border: "1px solid rgba(251,146,60,0.4)",
-                  background: "transparent", color: "#fb923c",
+                  border: "1px solid var(--accent-green)",
+                  background: "transparent", color: "var(--accent-green)",
                   fontSize: "12px", fontWeight: "600",
                   textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
                   display: "flex", alignItems: "center", gap: "5px",
@@ -346,7 +346,7 @@ export default function SettingsPage() {
                 onClick={handleAutoUpdate}
                 style={{
                   padding: "8px 18px", borderRadius: "8px", border: "none",
-                  background: "#fb923c", color: "#000",
+                  background: "var(--accent-green)", color: "#000",
                   fontSize: "12px", fontWeight: "700",
                   cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
                   display: "flex", alignItems: "center", gap: "6px",
@@ -539,12 +539,12 @@ export default function SettingsPage() {
 
       {isUpToDate && updatePhase === "idle" && (
         <div style={{
-          background: "rgba(0,229,122,0.08)", border: "1px solid rgba(0,229,122,0.3)",
+          background: "var(--accent-green-dim)", border: "1px solid var(--accent-green)",
           borderRadius: "12px", padding: "12px 18px", marginBottom: "20px",
           display: "flex", alignItems: "center", gap: "10px",
         }}>
-          <Check size={14} color="#00e57a" />
-          <span style={{ fontSize: "13px", color: "#00e57a", fontWeight: "600" }}>
+          <Check size={14} color="var(--accent-green)" />
+          <span style={{ fontSize: "13px", color: "var(--accent-green)", fontWeight: "600" }}>
             Journedge is up to date — v{CURRENT_VERSION}
           </span>
         </div>

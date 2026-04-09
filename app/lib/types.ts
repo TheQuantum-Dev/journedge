@@ -18,6 +18,8 @@ export interface Trade {
   entryTime?: string;
   exitTime?: string;
   rr?: string;
+  mae?: number;
+  mfe?: number;
   tags?: string[] | string;
   journalEntry?: string;
   link?: string;

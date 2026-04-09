@@ -55,12 +55,12 @@ interface Props {
 export default function Dashboard({ onAddTrade }: Props) {
   const { trades, setActivePage, setSelectedTrade } = useApp();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch]           = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSymbol, setFilterSymbol] = useState("");
-  const [filterTag, setFilterTag] = useState("");
-  const [filterFrom, setFilterFrom] = useState("");
-  const [filterTo, setFilterTo] = useState("");
+  const [filterTag, setFilterTag]     = useState("");
+  const [filterFrom, setFilterFrom]   = useState("");
+  const [filterTo, setFilterTo]       = useState("");
 
   const symbols = useMemo(() => {
     const set = new Set(trades.map((t) => t.underlying));
@@ -114,12 +114,12 @@ export default function Dashboard({ onAddTrade }: Props) {
     });
   }, [trades, search, filterStatus, filterSymbol, filterTag, filterFrom, filterTo]);
 
-  const totalPnl = filtered.reduce((sum, t) => sum + t.pnl, 0);
-  const wins = filtered.filter((t) => t.status === "win");
-  const losses = filtered.filter((t) => t.status === "loss");
-  const winRate = filtered.length > 0 ? Math.round((wins.length / filtered.length) * 100) : 0;
-  const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : 0;
-  const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pnl, 0) / losses.length) : 0;
+  const totalPnl     = filtered.reduce((sum, t) => sum + t.pnl, 0);
+  const wins         = filtered.filter((t) => t.status === "win");
+  const losses       = filtered.filter((t) => t.status === "loss");
+  const winRate      = filtered.length > 0 ? Math.round((wins.length / filtered.length) * 100) : 0;
+  const avgWin       = wins.length > 0 ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : 0;
+  const avgLoss      = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pnl, 0) / losses.length) : 0;
   const profitFactor = avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : "—";
 
   const stats = [
@@ -152,10 +152,7 @@ export default function Dashboard({ onAddTrade }: Props) {
   return (
     <>
       <div style={{ marginBottom: "32px" }}>
-        <h2 style={{
-          fontSize: "26px", fontWeight: "700",
-          color: "var(--text-primary)", letterSpacing: "-0.5px",
-        }}>
+        <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
           Dashboard
         </h2>
         <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
@@ -163,10 +160,7 @@ export default function Dashboard({ onAddTrade }: Props) {
         </p>
       </div>
 
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
-        gap: "16px", marginBottom: "32px",
-      }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "32px" }}>
         {stats.map((s) => <StatCard key={s.label} {...s} />)}
       </div>
 
@@ -180,7 +174,7 @@ export default function Dashboard({ onAddTrade }: Props) {
             background: "var(--accent-green-dim)", display: "flex",
             alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
           }}>
-            <Upload size={20} color="#00e57a" />
+            <Upload size={20} color="var(--accent-green)" />
           </div>
           <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", color: "var(--text-primary)" }}>
             No trades yet
@@ -193,7 +187,7 @@ export default function Dashboard({ onAddTrade }: Props) {
               onClick={() => setActivePage("import")}
               style={{
                 padding: "10px 20px", borderRadius: "8px", border: "none",
-                background: "#00e57a", color: "#000", fontSize: "13px",
+                background: "var(--accent-green)", color: "#000", fontSize: "13px",
                 fontWeight: "600", fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
               }}
             >
@@ -217,10 +211,7 @@ export default function Dashboard({ onAddTrade }: Props) {
           background: "var(--bg-card)", border: "1px solid var(--border)",
           borderRadius: "16px", overflow: "hidden",
         }}>
-          <div style={{
-            padding: "20px 24px 0",
-            borderBottom: "1px solid var(--border)",
-          }}>
+          <div style={{ padding: "20px 24px 0", borderBottom: "1px solid var(--border)" }}>
             <div style={{
               display: "flex", justifyContent: "space-between",
               alignItems: "center", marginBottom: "16px",
@@ -231,7 +222,7 @@ export default function Dashboard({ onAddTrade }: Props) {
                 </h3>
                 {activeFilterCount > 0 && (
                   <span style={{
-                    background: "rgba(0,229,122,0.15)", color: "#00e57a",
+                    background: "var(--accent-green-dim)", color: "var(--accent-green)",
                     fontSize: "11px", fontWeight: "700", padding: "2px 8px",
                     borderRadius: "20px",
                   }}>
@@ -260,10 +251,7 @@ export default function Dashboard({ onAddTrade }: Props) {
               )}
             </div>
 
-            <div style={{
-              display: "flex", gap: "10px", flexWrap: "wrap",
-              paddingBottom: "16px",
-            }}>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", paddingBottom: "16px" }}>
               <div style={{ position: "relative", flex: "1", minWidth: "160px" }}>
                 <Search size={13} color="#8888aa" style={{
                   position: "absolute", left: "10px", top: "50%",
@@ -311,15 +299,12 @@ export default function Dashboard({ onAddTrade }: Props) {
               )}
 
               <input
-                type="date"
-                value={filterFrom}
+                type="date" value={filterFrom}
                 onChange={(e) => setFilterFrom(e.target.value)}
                 style={{ ...selectStyle, padding: "8px 12px", colorScheme: "dark" }}
               />
-
               <input
-                type="date"
-                value={filterTo}
+                type="date" value={filterTo}
                 onChange={(e) => setFilterTo(e.target.value)}
                 style={{ ...selectStyle, padding: "8px 12px", colorScheme: "dark" }}
               />
@@ -330,7 +315,7 @@ export default function Dashboard({ onAddTrade }: Props) {
             <div style={{ padding: "48px", textAlign: "center", color: "#8888aa", fontSize: "14px" }}>
               No trades match your filters.{" "}
               <button onClick={clearFilters} style={{
-                background: "none", border: "none", color: "#00e57a",
+                background: "none", border: "none", color: "var(--accent-green)",
                 cursor: "pointer", fontSize: "14px", fontFamily: "'DM Sans', sans-serif",
               }}>
                 Clear filters
@@ -385,8 +370,12 @@ export default function Dashboard({ onAddTrade }: Props) {
                       <td style={{ padding: "12px 16px" }}>
                         <span style={{
                           padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "600",
-                          background: trade.status === "win" ? "var(--accent-green-dim)" : "var(--accent-red-dim)",
-                          color: trade.status === "win" ? "#00e57a" : "#ff4d6a",
+                          background: trade.status === "win"
+                            ? "rgba(0,229,122,0.12)"
+                            : trade.status === "loss"
+                            ? "rgba(255,77,106,0.12)"
+                            : "rgba(136,136,170,0.12)",
+                          color: trade.status === "win" ? "#00e57a" : trade.status === "loss" ? "#ff4d6a" : "#8888aa",
                         }}>
                           {trade.status.toUpperCase()}
                         </span>

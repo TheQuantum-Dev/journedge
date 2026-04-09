@@ -37,6 +37,8 @@ model Trade {
   entryTime    String?
   exitTime     String?
   rr           String?
+  mae          Float?
+  mfe          Float?
   tags         String   @default("[]")
   journalEntry String?
   link         String?
@@ -58,3 +60,4 @@ model Tag {
   id   String @id
   name String @unique
 }
+

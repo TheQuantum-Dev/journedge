@@ -89,6 +89,8 @@ export default function AddTradeModal({ onClose }: Props) {
   const [commission, setCommission] = useState("0");
   const [fees, setFees]             = useState("0");
   const [rr, setRr]                 = useState("");
+  const [mae, setMae]               = useState("");
+  const [mfe, setMfe]               = useState("");
   const [tags, setTags]             = useState<string[]>([]);
   const [journalEntry, setJournalEntry] = useState("");
   const [saving, setSaving]         = useState(false);
@@ -156,6 +158,8 @@ export default function AddTradeModal({ onClose }: Props) {
       entryTime,
       exitTime,
       rr,
+      mae: mae !== "" ? parseFloat(mae) : undefined,
+      mfe: mfe !== "" ? parseFloat(mfe) : undefined,
       tags,
       journalEntry,
       accountId: activeAccount?.id || undefined,
@@ -203,19 +207,14 @@ export default function AddTradeModal({ onClose }: Props) {
           position: "sticky", top: 0, background: "var(--bg-card)", zIndex: 1,
         }}>
           <div>
-            <h2 style={{ fontSize: "17px", fontWeight: "700", color: "#f0f0ff" }}>
-              Add Trade
-            </h2>
+            <h2 style={{ fontSize: "17px", fontWeight: "700", color: "#f0f0ff" }}>Add Trade</h2>
             {activeAccount && (
               <p style={{ fontSize: "12px", color: "#8888aa", marginTop: "2px" }}>
                 Adding to: {activeAccount.name}
               </p>
             )}
           </div>
-          <button onClick={onClose} style={{
-            background: "none", border: "none", cursor: "pointer",
-            padding: "4px", borderRadius: "6px",
-          }}>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", borderRadius: "6px" }}>
             <X size={18} color="#8888aa" />
           </button>
         </div>
@@ -231,7 +230,7 @@ export default function AddTradeModal({ onClose }: Props) {
             </div>
           )}
 
-          {/* Live P&L preview */}
+          {/* Live P&L */}
           {livePnl !== null && (
             <div style={{
               background: livePnl >= 0 ? "rgba(0,229,122,0.08)" : "rgba(255,77,106,0.08)",
@@ -241,10 +240,7 @@ export default function AddTradeModal({ onClose }: Props) {
               justifyContent: "space-between", alignItems: "center",
             }}>
               <span style={{ fontSize: "13px", color: "#8888aa" }}>Estimated P&L</span>
-              <span style={{
-                fontSize: "20px", fontWeight: "700",
-                color: livePnl >= 0 ? "#00e57a" : "#ff4d6a",
-              }}>
+              <span style={{ fontSize: "20px", fontWeight: "700", color: livePnl >= 0 ? "#00e57a" : "#ff4d6a" }}>
                 {livePnl >= 0 ? "+" : ""}${livePnl.toFixed(2)}
               </span>
             </div>
@@ -255,7 +251,6 @@ export default function AddTradeModal({ onClose }: Props) {
           </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "20px" }}>
-            {/* Symbol */}
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Symbol</label>
               <input
@@ -283,92 +278,47 @@ export default function AddTradeModal({ onClose }: Props) {
 
             <div>
               <label style={labelStyle}>Date</label>
-              <input
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                placeholder="MM/DD/YYYY"
-                style={inputStyle}
-              />
+              <input value={date} onChange={(e) => setDate(e.target.value)} placeholder="MM/DD/YYYY" style={inputStyle} />
             </div>
 
             <div>
               <label style={labelStyle}>Entry Price</label>
-              <input
-                value={entryPrice}
-                onChange={(e) => setEntryPrice(e.target.value)}
-                placeholder="0.00" type="number" step="0.01"
-                style={inputStyle}
-              />
+              <input value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} placeholder="0.00" type="number" step="0.01" style={inputStyle} />
             </div>
 
             <div>
               <label style={labelStyle}>Exit Price</label>
-              <input
-                value={exitPrice}
-                onChange={(e) => setExitPrice(e.target.value)}
-                placeholder="0.00" type="number" step="0.01"
-                style={inputStyle}
-              />
+              <input value={exitPrice} onChange={(e) => setExitPrice(e.target.value)} placeholder="0.00" type="number" step="0.01" style={inputStyle} />
             </div>
 
             <div>
               <label style={labelStyle}>Quantity</label>
-              <input
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="1" type="number"
-                style={inputStyle}
-              />
+              <input value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="1" type="number" style={inputStyle} />
             </div>
 
             <div>
               <label style={labelStyle}>Commission</label>
-              <input
-                value={commission}
-                onChange={(e) => setCommission(e.target.value)}
-                placeholder="0.00" type="number" step="0.01"
-                style={inputStyle}
-              />
+              <input value={commission} onChange={(e) => setCommission(e.target.value)} placeholder="0.00" type="number" step="0.01" style={inputStyle} />
             </div>
 
             <div>
               <label style={labelStyle}>Fees</label>
-              <input
-                value={fees}
-                onChange={(e) => setFees(e.target.value)}
-                placeholder="0.00" type="number" step="0.01"
-                style={inputStyle}
-              />
+              <input value={fees} onChange={(e) => setFees(e.target.value)} placeholder="0.00" type="number" step="0.01" style={inputStyle} />
             </div>
 
             <div>
               <label style={labelStyle}>Entry Time</label>
-              <input
-                value={entryTime}
-                onChange={(e) => setEntryTime(e.target.value)}
-                placeholder="e.g. 9:32 AM"
-                style={inputStyle}
-              />
+              <input value={entryTime} onChange={(e) => setEntryTime(e.target.value)} placeholder="e.g. 9:32 AM" style={inputStyle} />
             </div>
 
             <div>
               <label style={labelStyle}>Exit Time</label>
-              <input
-                value={exitTime}
-                onChange={(e) => setExitTime(e.target.value)}
-                placeholder="e.g. 10:15 AM"
-                style={inputStyle}
-              />
+              <input value={exitTime} onChange={(e) => setExitTime(e.target.value)} placeholder="e.g. 10:15 AM" style={inputStyle} />
             </div>
 
             <div>
               <label style={labelStyle}>R:R Ratio</label>
-              <input
-                value={rr}
-                onChange={(e) => setRr(e.target.value)}
-                placeholder="e.g. 1:2"
-                style={inputStyle}
-              />
+              <input value={rr} onChange={(e) => setRr(e.target.value)} placeholder="e.g. 1:2" style={inputStyle} />
             </div>
           </div>
 
@@ -390,25 +340,30 @@ export default function AddTradeModal({ onClose }: Props) {
                 </div>
                 <div>
                   <label style={labelStyle}>Strike</label>
-                  <input
-                    value={strike}
-                    onChange={(e) => setStrike(e.target.value)}
-                    placeholder="0.00" type="number"
-                    style={inputStyle}
-                  />
+                  <input value={strike} onChange={(e) => setStrike(e.target.value)} placeholder="0.00" type="number" style={inputStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Expiry</label>
-                  <input
-                    value={expiry}
-                    onChange={(e) => setExpiry(e.target.value)}
-                    placeholder="YYYY-MM-DD"
-                    style={inputStyle}
-                  />
+                  <input value={expiry} onChange={(e) => setExpiry(e.target.value)} placeholder="YYYY-MM-DD" style={inputStyle} />
                 </div>
               </div>
             </>
           )}
+
+          {/* MAE / MFE */}
+          <p style={{ fontSize: "11px", fontWeight: "700", color: "#8888aa", marginBottom: "12px", letterSpacing: "0.5px" }}>
+            EXECUTION QUALITY
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "20px" }}>
+            <div>
+              <label style={labelStyle}>MAE — worst move against you</label>
+              <input value={mae} onChange={(e) => setMae(e.target.value)} placeholder="e.g. 1.25" type="number" step="0.01" min="0" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>MFE — best move in your favor</label>
+              <input value={mfe} onChange={(e) => setMfe(e.target.value)} placeholder="e.g. 3.50" type="number" step="0.01" min="0" style={inputStyle} />
+            </div>
+          </div>
 
           {/* Tags */}
           <p style={{ fontSize: "11px", fontWeight: "700", color: "#8888aa", marginBottom: "12px", letterSpacing: "0.5px" }}>
@@ -427,12 +382,7 @@ export default function AddTradeModal({ onClose }: Props) {
             onChange={(e) => setJournalEntry(e.target.value)}
             placeholder="What happened? What did you do well? What would you do differently?"
             rows={4}
-            style={{
-              ...inputStyle,
-              resize: "vertical",
-              lineHeight: "1.6",
-              marginBottom: "24px",
-            }}
+            style={{ ...inputStyle, resize: "vertical", lineHeight: "1.6", marginBottom: "24px" }}
           />
 
           <div style={{ display: "flex", gap: "12px" }}>

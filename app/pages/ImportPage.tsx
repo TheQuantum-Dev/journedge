@@ -2,18 +2,17 @@
 import { useState, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { Trade } from "../lib/types";
-import { parseFidelityCSV }                          from "../lib/parseFidelityCSV";
-import { parseJournedgeCSV, isJournedgeCSV }           from "../lib/parseJournedgeCSV";
-import { parseTDAmeritradeCSV, isTDAmeritradeCSV }   from "../lib/parseTDAmeritradeCSV";
-import { parseTastytradeCSV, isTastytradeCSV }       from "../lib/parseTastytradeCSV";
-import { parseIBKRCSV, isIBKRCSV }                   from "../lib/parseIBKRCSV";
+import { parseFidelityCSV }                        from "../lib/parseFidelityCSV";
+import { parseJournedgeCSV, isJournedgeCSV }        from "../lib/parseJournedgeCSV";
+import { parseTDAmeritradeCSV, isTDAmeritradeCSV }  from "../lib/parseTDAmeritradeCSV";
+import { parseTastytradeCSV, isTastytradeCSV }      from "../lib/parseTastytradeCSV";
+import { parseIBKRCSV, isIBKRCSV }                 from "../lib/parseIBKRCSV";
 import {
   Upload, CheckCircle, AlertCircle, FileText,
   ArrowRight, X, Database, RefreshCw,
 } from "lucide-react";
 
 type ParseStatus = "idle" | "success" | "error" | "importing";
-
 type BrokerSource = "Journedge" | "fidelity" | "tdameritrade" | "tastytrade" | "ibkr";
 
 interface ParseResult {
@@ -23,7 +22,7 @@ interface ParseResult {
 }
 
 const BADGE_CONFIG: Record<BrokerSource, { label: string; color: string; bg: string; border: string }> = {
-  Journedge:     { label: "Journedge Export",   color: "#00e57a", bg: "rgba(0,229,122,0.12)",   border: "rgba(0,229,122,0.3)"   },
+  Journedge:    { label: "Journedge Export",  color: "#00e57a", bg: "rgba(0,229,122,0.12)",   border: "rgba(0,229,122,0.3)"   },
   fidelity:     { label: "Fidelity CSV",      color: "#4d9fff", bg: "rgba(77,159,255,0.12)",  border: "rgba(77,159,255,0.3)"  },
   tdameritrade: { label: "TD Ameritrade CSV", color: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)"  },
   tastytrade:   { label: "Tastytrade CSV",    color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)" },
@@ -44,14 +43,42 @@ function FormatBadge({ source }: { source: BrokerSource }) {
   );
 }
 
-// Fidelity is the fallback — it throws on a hard format mismatch
 function detectAndParse(text: string): { trades: Trade[]; source: BrokerSource } {
   if (isJournedgeCSV(text))    return { trades: parseJournedgeCSV(text),    source: "Journedge"     };
-  if (isTastytradeCSV(text))  return { trades: parseTastytradeCSV(text),  source: "tastytrade"   };
-  if (isTDAmeritradeCSV(text))return { trades: parseTDAmeritradeCSV(text),source: "tdameritrade" };
-  if (isIBKRCSV(text))        return { trades: parseIBKRCSV(text),        source: "ibkr"         };
+  if (isTastytradeCSV(text))   return { trades: parseTastytradeCSV(text),   source: "tastytrade"   };
+  if (isTDAmeritradeCSV(text)) return { trades: parseTDAmeritradeCSV(text), source: "tdameritrade" };
+  if (isIBKRCSV(text))         return { trades: parseIBKRCSV(text),         source: "ibkr"         };
   return { trades: parseFidelityCSV(text), source: "fidelity" };
 }
+
+const BROKER_CARDS = [
+  {
+    label: "Journedge Export",
+    desc:  "Re-import a CSV you previously exported from Journedge. All journal notes, tags, and trade data are preserved.",
+    color: "#00e57a", bg: "rgba(0,229,122,0.06)", border: "rgba(0,229,122,0.2)",
+  },
+  {
+    label: "Fidelity",
+    desc:  "Upload your Fidelity trade history export. Trades are automatically parsed and P&L calculated.",
+    color: "#4d9fff", bg: "rgba(77,159,255,0.06)", border: "rgba(77,159,255,0.2)",
+  },
+  {
+    label: "TD Ameritrade",
+    desc:  "Upload a TD Ameritrade Transaction History CSV. Works with post-Schwab merger exports.",
+    color: "#fb923c", bg: "rgba(251,146,60,0.06)", border: "rgba(251,146,60,0.2)",
+  },
+  {
+    label: "Tastytrade",
+    desc:  "Upload a Tastytrade transaction history CSV. Options, stocks, and futures are all supported.",
+    color: "#a78bfa", bg: "rgba(167,139,250,0.06)", border: "rgba(167,139,250,0.2)",
+  },
+  {
+    label: "Interactive Brokers",
+    desc:  "Upload an IBKR Activity Statement CSV. Export from Flex Query or the standard Activity Statement.",
+    color: "#f472b6", bg: "rgba(244,114,182,0.06)", border: "rgba(244,114,182,0.2)",
+    fullWidth: true,
+  },
+];
 
 export default function ImportPage() {
   const { activeAccount, reloadTrades, setActivePage } = useApp();
@@ -77,15 +104,12 @@ export default function ImportPage() {
       setMessage("Only .csv files are supported.");
       return;
     }
-
     setFileName(file.name);
-
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
         const { trades, source } = detectAndParse(text);
-
         if (trades.length === 0) {
           setStatus("error");
           setMessage(
@@ -94,11 +118,10 @@ export default function ImportPage() {
           );
           return;
         }
-
         setResult({ trades, source, count: trades.length });
         setStatus("success");
         setMessage(`Found ${trades.length} trade${trades.length !== 1 ? "s" : ""} — ready to import.`);
-      } catch (err) {
+      } catch {
         setStatus("error");
         setMessage("Could not parse this file. Check it's a valid broker or Journedge CSV.");
       }
@@ -116,19 +139,13 @@ export default function ImportPage() {
   const handleConfirm = async () => {
     if (!result) return;
     setStatus("importing");
-
     try {
       const res = await fetch("/api/trades", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          trades: result.trades,
-          accountId: activeAccount?.id || null,
-        }),
+        body: JSON.stringify({ trades: result.trades, accountId: activeAccount?.id || null }),
       });
-
       if (!res.ok) throw new Error("API error");
-
       await reloadTrades();
       setActivePage("dashboard");
     } catch {
@@ -138,13 +155,10 @@ export default function ImportPage() {
   };
 
   return (
-    <div style={{ maxWidth: "760px" }}>
+    <div>
       {/* Header */}
       <div style={{ marginBottom: "32px" }}>
-        <h2 style={{
-          fontSize: "26px", fontWeight: "700",
-          color: "#f0f0ff", letterSpacing: "-0.5px",
-        }}>
+        <h2 style={{ fontSize: "26px", fontWeight: "700", color: "#f0f0ff", letterSpacing: "-0.5px" }}>
           Import Trades
         </h2>
         <p style={{ color: "#8888aa", fontSize: "14px", marginTop: "4px" }}>
@@ -154,42 +168,17 @@ export default function ImportPage() {
         </p>
       </div>
 
-      {/* Supported broker cards */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr",
-        gap: "12px", marginBottom: "24px",
-      }}>
-        {[
-          {
-            label: "Journedge Export",
-            desc:  "Re-import a CSV you previously exported from Journedge. All journal notes, tags, and trade data are preserved.",
-            color: "#00e57a", bg: "rgba(0,229,122,0.06)", border: "rgba(0,229,122,0.2)",
-          },
-          {
-            label: "Fidelity",
-            desc:  "Upload your Fidelity trade history export. Trades are automatically parsed and P&L calculated.",
-            color: "#4d9fff", bg: "rgba(77,159,255,0.06)", border: "rgba(77,159,255,0.2)",
-          },
-          {
-            label: "TD Ameritrade",
-            desc:  "Upload a TD Ameritrade Transaction History CSV. Works with post-Schwab merger exports.",
-            color: "#fb923c", bg: "rgba(251,146,60,0.06)", border: "rgba(251,146,60,0.2)",
-          },
-          {
-            label: "Tastytrade",
-            desc:  "Upload a Tastytrade transaction history CSV. Options, stocks, and futures are all supported.",
-            color: "#a78bfa", bg: "rgba(167,139,250,0.06)", border: "rgba(167,139,250,0.2)",
-          },
-          {
-            label: "Interactive Brokers",
-            desc:  "Upload an IBKR Activity Statement CSV. Export from Flex Query or the standard Activity Statement.",
-            color: "#f472b6", bg: "rgba(244,114,182,0.06)", border: "rgba(244,114,182,0.2)",
-          },
-        ].map((card) => (
-          <div key={card.label} style={{
-            background: card.bg, border: `1px solid ${card.border}`,
-            borderRadius: "12px", padding: "16px",
-          }}>
+      {/* Broker cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "24px" }}>
+        {BROKER_CARDS.map((card) => (
+          <div
+            key={card.label}
+            style={{
+              background: card.bg, border: `1px solid ${card.border}`,
+              borderRadius: "12px", padding: "16px",
+              gridColumn: card.fullWidth ? "1 / -1" : undefined,
+            }}
+          >
             <div style={{ fontSize: "12px", fontWeight: "700", color: card.color, marginBottom: "6px" }}>
               {card.label}
             </div>
@@ -207,20 +196,15 @@ export default function ImportPage() {
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         style={{
-          border: `2px dashed ${dragging ? "#00e57a" : "var(--border)"}`,
-          borderRadius: "16px",
-          padding: "48px 32px",
-          textAlign: "center",
+          border: `2px dashed ${dragging ? "var(--accent-green)" : "var(--border)"}`,
+          borderRadius: "16px", padding: "64px 32px", textAlign: "center",
           cursor: status === "idle" ? "pointer" : "default",
-          background: dragging ? "rgba(0,229,122,0.04)" : "var(--bg-card)",
+          background: dragging ? "var(--accent-green-dim)" : "var(--bg-card)",
           transition: "all 0.2s ease",
-          position: "relative",
         }}
       >
         <input
-          ref={fileRef}
-          type="file"
-          accept=".csv"
+          ref={fileRef} type="file" accept=".csv"
           style={{ display: "none" }}
           onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
         />
@@ -228,17 +212,17 @@ export default function ImportPage() {
         {status === "idle" && (
           <>
             <div style={{
-              width: "48px", height: "48px", borderRadius: "12px",
-              background: "rgba(0,229,122,0.1)",
+              width: "56px", height: "56px", borderRadius: "14px",
+              background: "var(--accent-green-dim)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 16px",
+              margin: "0 auto 20px",
             }}>
-              <Upload size={22} color="#00e57a" />
+              <Upload size={24} color="var(--accent-green)" />
             </div>
-            <div style={{ fontSize: "16px", fontWeight: "700", color: "#f0f0ff", marginBottom: "6px" }}>
+            <div style={{ fontSize: "18px", fontWeight: "700", color: "#f0f0ff", marginBottom: "8px" }}>
               Drop your CSV here
             </div>
-            <div style={{ fontSize: "13px", color: "#8888aa" }}>
+            <div style={{ fontSize: "14px", color: "#8888aa" }}>
               Format is auto-detected — no configuration needed
             </div>
           </>
@@ -246,9 +230,9 @@ export default function ImportPage() {
 
         {status === "success" && result && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-            <CheckCircle size={32} color="#00e57a" />
+            <CheckCircle size={36} color="var(--accent-green)" />
             <div>
-              <div style={{ fontSize: "15px", fontWeight: "700", color: "#f0f0ff", marginBottom: "6px" }}>
+              <div style={{ fontSize: "16px", fontWeight: "700", color: "#f0f0ff", marginBottom: "8px" }}>
                 {message}
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
@@ -262,7 +246,7 @@ export default function ImportPage() {
 
         {status === "error" && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-            <AlertCircle size={32} color="#ff4d6a" />
+            <AlertCircle size={36} color="#ff4d6a" />
             <div style={{ fontSize: "14px", color: "#ff4d6a", fontWeight: "600" }}>{message}</div>
             <button
               onClick={(e) => { e.stopPropagation(); reset(); }}
@@ -283,9 +267,9 @@ export default function ImportPage() {
         {status === "importing" && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
             <div style={{
-              width: "32px", height: "32px", borderRadius: "50%",
-              border: "3px solid rgba(0,229,122,0.2)",
-              borderTop: "3px solid #00e57a",
+              width: "36px", height: "36px", borderRadius: "50%",
+              border: "3px solid var(--accent-green-dim)",
+              borderTop: "3px solid var(--accent-green)",
               animation: "spin 0.8s linear infinite",
             }} />
             <div style={{ fontSize: "14px", color: "#8888aa" }}>Saving trades…</div>
@@ -302,7 +286,7 @@ export default function ImportPage() {
           borderRadius: "12px",
         }}>
           <div style={{ fontSize: "13px", color: "#8888aa" }}>
-            <span style={{ color: "#00e57a", fontWeight: "700" }}>{result.count} trades</span>
+            <span style={{ color: "var(--accent-green)", fontWeight: "700" }}>{result.count} trades</span>
             {" "}will be added to{" "}
             <span style={{ color: "#f0f0ff", fontWeight: "600" }}>
               {activeAccount?.name || "no account"}
@@ -332,7 +316,7 @@ export default function ImportPage() {
               style={{
                 display: "flex", alignItems: "center", gap: "8px",
                 padding: "9px 20px", borderRadius: "8px",
-                border: "none", background: "#00e57a",
+                border: "none", background: "var(--accent-green)",
                 color: "#000", fontSize: "13px", fontWeight: "700",
                 cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
               }}
@@ -353,10 +337,7 @@ export default function ImportPage() {
           }}>
             Preview — first {Math.min(result.trades.length, 10)} of {result.trades.length}
           </div>
-          <div style={{
-            overflowX: "auto", borderRadius: "12px",
-            border: "1px solid var(--border)",
-          }}>
+          <div style={{ overflowX: "auto", borderRadius: "12px", border: "1px solid var(--border)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
@@ -374,9 +355,7 @@ export default function ImportPage() {
                 {result.trades.slice(0, 10).map((trade) => (
                   <tr key={trade.id} style={{ borderBottom: "1px solid var(--border)" }}>
                     <td style={{ padding: "10px 14px", color: "#8888aa" }}>{trade.date}</td>
-                    <td style={{ padding: "10px 14px", color: "#f0f0ff", fontWeight: "700" }}>
-                      {trade.underlying}
-                    </td>
+                    <td style={{ padding: "10px 14px", color: "#f0f0ff", fontWeight: "700" }}>{trade.underlying}</td>
                     <td style={{ padding: "10px 14px" }}>
                       {trade.optionType ? (
                         <span style={{
@@ -398,10 +377,7 @@ export default function ImportPage() {
                     <td style={{ padding: "10px 14px", color: "#8888aa" }}>{trade.quantity}</td>
                     <td style={{ padding: "10px 14px", color: "#8888aa" }}>${trade.entryPrice}</td>
                     <td style={{ padding: "10px 14px", color: "#8888aa" }}>${trade.exitPrice}</td>
-                    <td style={{
-                      padding: "10px 14px", fontWeight: "700",
-                      color: trade.pnl >= 0 ? "#00e57a" : "#ff4d6a",
-                    }}>
+                    <td style={{ padding: "10px 14px", fontWeight: "700", color: trade.pnl >= 0 ? "#00e57a" : "#ff4d6a" }}>
                       {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                     </td>
                     <td style={{ padding: "10px 14px" }}>
@@ -425,10 +401,7 @@ export default function ImportPage() {
       )}
 
       <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );

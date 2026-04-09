@@ -10,24 +10,16 @@ const BROKERS = [
 ];
 
 const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: "8px",
-  border: "1px solid var(--border)",
-  background: "var(--bg-secondary)",
-  color: "#f0f0ff",
-  fontSize: "13px",
-  fontFamily: "'DM Sans', sans-serif",
-  boxSizing: "border-box",
-  outline: "none",
+  width: "100%", padding: "10px 12px", borderRadius: "8px",
+  border: "1px solid var(--border)", background: "var(--bg-secondary)",
+  color: "#f0f0ff", fontSize: "13px", fontFamily: "'DM Sans', sans-serif",
+  boxSizing: "border-box", outline: "none",
 };
 
 const selectStyle: React.CSSProperties = {
   ...inputStyle,
-  appearance: "none",
-  WebkitAppearance: "none",
-  cursor: "pointer",
-  paddingRight: "36px",
+  appearance: "none", WebkitAppearance: "none",
+  cursor: "pointer", paddingRight: "36px",
 };
 
 function SelectWrapper({ children }: { children: React.ReactNode }) {
@@ -35,8 +27,7 @@ function SelectWrapper({ children }: { children: React.ReactNode }) {
     <div style={{ position: "relative" }}>
       {children}
       <ChevronDown
-        size={14}
-        color="#8888aa"
+        size={14} color="#8888aa"
         style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
       />
     </div>
@@ -45,13 +36,13 @@ function SelectWrapper({ children }: { children: React.ReactNode }) {
 
 export default function AccountsPage() {
   const { accounts, activeAccount, setActiveAccount, addAccount } = useApp();
-  const [showForm, setShowForm] = useState(accounts.length === 0);
-  const [name, setName] = useState("");
-  const [broker, setBroker] = useState(BROKERS[0]);
+  const [showForm, setShowForm]           = useState(accounts.length === 0);
+  const [name, setName]                   = useState("");
+  const [broker, setBroker]               = useState(BROKERS[0]);
   const [initialBalance, setInitialBalance] = useState("");
-  const [currency, setCurrency] = useState("USD");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [currency, setCurrency]           = useState("USD");
+  const [saving, setSaving]               = useState(false);
+  const [error, setError]                 = useState("");
 
   const handleCreate = async () => {
     if (!name.trim()) return setError("Account name is required");
@@ -75,14 +66,12 @@ export default function AccountsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(account),
       });
-
       if (!res.ok) throw new Error("Failed to create account");
-
       addAccount(account);
       setShowForm(false);
       setName("");
       setInitialBalance("");
-    } catch (err) {
+    } catch {
       setError("Failed to save account. Please try again.");
     } finally {
       setSaving(false);
@@ -117,7 +106,7 @@ export default function AccountsPage() {
             style={{
               display: "flex", alignItems: "center", gap: "8px",
               padding: "10px 16px", borderRadius: "8px", border: "none",
-              background: "#00e57a", color: "#000", fontSize: "13px",
+              background: "var(--accent-green)", color: "#000", fontSize: "13px",
               fontWeight: "600", cursor: "pointer",
             }}
           >
@@ -148,7 +137,6 @@ export default function AccountsPage() {
           )}
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            {/* Account Name */}
             <div>
               <label style={{ fontSize: "12px", color: "#8888aa", fontWeight: "600", display: "block", marginBottom: "6px" }}>
                 Account Name
@@ -161,7 +149,6 @@ export default function AccountsPage() {
               />
             </div>
 
-            {/* Broker */}
             <div>
               <label style={{ fontSize: "12px", color: "#8888aa", fontWeight: "600", display: "block", marginBottom: "6px" }}>
                 Broker
@@ -173,7 +160,6 @@ export default function AccountsPage() {
               </SelectWrapper>
             </div>
 
-            {/* Initial Balance */}
             <div>
               <label style={{ fontSize: "12px", color: "#8888aa", fontWeight: "600", display: "block", marginBottom: "6px" }}>
                 Initial Balance
@@ -181,13 +167,11 @@ export default function AccountsPage() {
               <input
                 value={initialBalance}
                 onChange={(e) => setInitialBalance(e.target.value)}
-                placeholder="e.g. 10000"
-                type="number"
+                placeholder="e.g. 10000" type="number"
                 style={inputStyle}
               />
             </div>
 
-            {/* Currency */}
             <div>
               <label style={{ fontSize: "12px", color: "#8888aa", fontWeight: "600", display: "block", marginBottom: "6px" }}>
                 Currency
@@ -208,7 +192,7 @@ export default function AccountsPage() {
               disabled={saving}
               style={{
                 padding: "10px 20px", borderRadius: "8px", border: "none",
-                background: "#00e57a", color: "#000", fontSize: "13px",
+                background: "var(--accent-green)", color: "#000", fontSize: "13px",
                 fontWeight: "600", cursor: saving ? "not-allowed" : "pointer",
                 opacity: saving ? 0.7 : 1,
               }}
@@ -242,30 +226,29 @@ export default function AccountsPage() {
                 onClick={() => setActiveAccount(account)}
                 style={{
                   background: "var(--bg-card)",
-                  border: `1px solid ${isActive ? "#00e57a" : "var(--border)"}`,
+                  border: `1px solid ${isActive ? "var(--accent-green)" : "var(--border)"}`,
                   borderRadius: "16px", padding: "20px", cursor: "pointer",
-                  transition: "all 0.15s ease",
-                  position: "relative",
+                  transition: "all 0.15s ease", position: "relative",
                 }}
               >
                 {isActive && (
                   <div style={{
                     position: "absolute", top: "12px", right: "12px",
-                    background: "rgba(0,229,122,0.15)", borderRadius: "20px",
+                    background: "var(--accent-green-dim)", borderRadius: "20px",
                     padding: "2px 8px", display: "flex", alignItems: "center", gap: "4px",
                   }}>
-                    <Check size={10} color="#00e57a" />
-                    <span style={{ fontSize: "10px", color: "#00e57a", fontWeight: "600" }}>ACTIVE</span>
+                    <Check size={10} color="var(--accent-green)" />
+                    <span style={{ fontSize: "10px", color: "var(--accent-green)", fontWeight: "600" }}>ACTIVE</span>
                   </div>
                 )}
 
                 <div style={{
                   width: "40px", height: "40px", borderRadius: "10px",
-                  background: isActive ? "rgba(0,229,122,0.15)" : "rgba(255,255,255,0.05)",
+                  background: isActive ? "var(--accent-green-dim)" : "rgba(255,255,255,0.05)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   marginBottom: "12px",
                 }}>
-                  <Wallet size={18} color={isActive ? "#00e57a" : "#8888aa"} />
+                  <Wallet size={18} color={isActive ? "var(--accent-green)" : "#8888aa"} />
                 </div>
 
                 <div style={{ fontSize: "16px", fontWeight: "700", color: "#f0f0ff", marginBottom: "4px" }}>
@@ -278,7 +261,7 @@ export default function AccountsPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                   <div>
                     <div style={{ fontSize: "11px", color: "#8888aa", marginBottom: "2px" }}>Initial Balance</div>
-                    <div style={{ fontSize: "18px", fontWeight: "700", color: "#00e57a" }}>
+                    <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--accent-green)" }}>
                       {account.currency} {account.initialBalance.toLocaleString()}
                     </div>
                   </div>
