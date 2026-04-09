@@ -2,6 +2,12 @@
 
 All notable changes to Journedge are documented here.
 
+## [3.2.0] - 2026-04-09
+
+### New Features
+
+- v3.2.0 — MAE/MFE tracking, execution analytics, behavior analysis, risk of ruin, UI theme fixes (`1b046a0`)
+
 ## [3.1.1] - 2026-04-06
 
 ### New Features
