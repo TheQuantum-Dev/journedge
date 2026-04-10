@@ -8,17 +8,18 @@ datasource db {
 }
 
 model Account {
-  id             String   @id
+  id             String      @id
   name           String
   broker         String
   initialBalance Float
-  currency       String   @default("USD")
-  createdAt      DateTime @default(now())
+  currency       String      @default("USD")
+  createdAt      DateTime    @default(now())
   trades         Trade[]
+  plans          TradePlan[]
 }
 
 model Trade {
-  id           String   @id
+  id           String     @id
   date         String
   symbol       String
   underlying   String
@@ -39,13 +40,54 @@ model Trade {
   rr           String?
   mae          Float?
   mfe          Float?
-  tags         String   @default("[]")
+  hourOfDay    Int?
+  playbookId   String?
+  planId       String?
+  tags         String     @default("[]")
   journalEntry String?
   link         String?
-  imageUrls    String   @default("[]")
+  imageUrls    String     @default("[]")
+  accountId    String?
+  account      Account?   @relation(fields: [accountId], references: [id])
+  plan         TradePlan?
+  createdAt    DateTime   @default(now())
+}
+
+model TradePlan {
+  id           String   @id
+  date         String
+  symbol       String
+  underlying   String
+  direction    String
+  setupType    String?
+  thesis       String?
+  entryZone    String?
+  stopLevel    Float?
+  targetLevel  Float?
+  plannedRR    String?
+  plannedSize  Float?
+  invalidation String?
+  status       String   @default("pending")
+  tradeId      String?  @unique
+  trade        Trade?   @relation(fields: [tradeId], references: [id])
   accountId    String?
   account      Account? @relation(fields: [accountId], references: [id])
   createdAt    DateTime @default(now())
+}
+
+model Playbook {
+  id            String   @id
+  name          String
+  description   String?
+  rules         String   @default("[]")
+  timeframes    String?
+  instruments   String?
+  entryTriggers String   @default("[]")
+  exitRules     String?
+  notes         String?
+  imageUrls     String   @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model JournalTemplate {
@@ -60,4 +102,3 @@ model Tag {
   id   String @id
   name String @unique
 }
-
