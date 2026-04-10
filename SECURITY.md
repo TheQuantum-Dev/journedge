@@ -4,11 +4,11 @@
 
 | Version | Supported |
 |---------|-----------|
+| 3.2.x   | :white_check_mark: |
 | 3.1.x   | :white_check_mark: |
-| 3.0.x   | :white_check_mark: |
-| < 3.0   | :x:  |
+| < 3.1.0   | :x:  |
 
-Only the two most recent minor releases receive security fixes. If you are on an older version, upgrade before reporting.
+Only the most recent minor releases receive security fixes. If you are on an older version, upgrade before reporting.
 
 ---
 

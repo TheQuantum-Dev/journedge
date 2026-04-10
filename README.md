@@ -10,7 +10,7 @@
 
 <br /><br />
 
-![Version](https://img.shields.io/badge/version-3.1.0-4d9fff?style=flat-square)
+![Version](https://img.shields.io/badge/version-3.2.0-4d9fff?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript)
@@ -31,7 +31,7 @@ Most trading journals are either too simple to be useful or locked behind expens
 
 **Your data stays yours.** Everything runs locally on your machine using SQLite. No cloud sync, no user accounts, no telemetry, no third-party data transfers. Your trade history, journal entries, and performance data never leave your machine.
 
-**Built for serious traders.** Multi-account support, real equity curve tracking from actual starting balance, institutional-grade risk analytics, tag-based behavioural analysis, and a full rich text journal — not just a P&L spreadsheet.
+**Built for serious traders.** Multi-account support, real equity curve tracking from actual starting balance, institutional-grade risk analytics, execution quality analysis, behavioral pattern detection, and a full rich text journal — not just a P&L spreadsheet.
 
 **Open source and auditable.** The entire codebase is available, readable, and open to contribution. You can verify exactly what the application does with your data.
 
@@ -80,7 +80,7 @@ Report builder with date range, ticker, tag, and status filters. Live PDF previe
 - Import trades from five brokers — format auto-detected on file drop, no configuration required
 - Manual trade entry with live P&L preview, auto symbol detection, and OCC option symbol parsing
 - Multi-account support — create separate accounts per broker, switch from the sidebar, all data is account-scoped
-- Full trade journal with rich text, tags, screenshots, entry/exit times, R:R ratio, chart links
+- Full trade journal with rich text, tags, screenshots, entry/exit times, R:R ratio, chart links, MAE, and MFE
 - Idempotent imports — re-importing the same file does not create duplicates
 
 ### Journal Editor
@@ -106,13 +106,14 @@ The journal editor is a full word processor built on TipTap and ProseMirror.
 
 ### Tag System
 
-Tags are stored in a dedicated database table and shared globally across the app. Every entry point — the journal editor, the quick view panel, and the add trade modal — uses the same tag selector. Creating a new tag anywhere persists it immediately and makes it available everywhere. Existing tags from all your trades are seeded into the tag table on first load.
+Tags are stored in a dedicated database table and shared globally across the app. Every entry point — the journal editor, the quick view panel, and the add trade modal — uses the same tag selector. Creating a new tag anywhere persists it immediately and makes it available everywhere.
 
 ### Dashboard
 
 - Stat cards for net P&L, win rate, profit factor, and average loss — reactive to active filters
 - Filter by symbol, status, tag, date range, and free-text search simultaneously
 - Full trade history table with click-to-open detail panel
+- WIN/LOSS status indicators always display in fixed red/green regardless of accent color theme
 
 ### Analytics Engine
 
@@ -138,13 +139,23 @@ Tags are stored in a dedicated database table and shared globally across the app
 - R-multiple histogram using average loss as 1R proxy
 - Average R per trade and expectancy in R units
 
-**Breakdown analysis**
-- P&L and win rate by underlying symbol
-- P&L and win rate by tag
+**Execution quality (new in v3.2.0)**
+- MAE / MFE per-trade logging and analysis
+- Entry efficiency — how close to the optimal entry price you got
+- Exit efficiency — how much of the maximum available move you captured
+- Paired MAE/MFE bar chart per trade
+
+**Behavioral analysis (new in v3.2.0)**
+- Overtrading detection — flags sessions where trade count significantly exceeds your personal baseline
+- Revenge trade sequence detection
+- Discipline score
+- Risk of ruin calculator with interactive position sizing slider
+- Kelly Criterion and half-Kelly recommendation
 
 ### Calendar
 
-- Monthly calendar with per-day P&L colouring
+- Monthly calendar with per-day P&L colouring — always red/green, not affected by accent theme
+- Calendar automatically opens to the month of your most recent trade
 - Click any day to open a detail panel — click any trade to open the full journal editor
 
 ### Export
@@ -156,10 +167,10 @@ Tags are stored in a dedicated database table and shared globally across the app
 
 ### Settings
 
-- Accent colour themes — green, blue, purple, orange, pink
+- Accent colour themes — green, blue, purple, orange, pink — applied consistently across the entire interface
 - Trading preferences — default multiplier, commission, fees
 - CSV export for backup or migration
-- In-app auto-update — fetches latest release from GitHub, runs install and migration, prompts restart
+- In-app auto-update — environment-aware, shadow install, semver comparison, backup verification
 - Automatic database backup before every update — last five retained
 
 ---
@@ -246,7 +257,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 **CSV parsers.** Each broker has an isolated parser in `app/lib/`. The import page runs format detection in priority order — Journedge export first, then Tastytrade, TD Ameritrade, IBKR, with Fidelity as the fallback.
 
-**Journal editor.** Built on TipTap with ProseMirror as the underlying engine. Documents are stored as TipTap JSON in the existing `journalEntry` TEXT column. Legacy plain-text entries render as plain paragraphs. Autosave debounces 1.5 seconds and patches the in-memory trade immediately so navigation never shows stale content.
+**Journal editor.** Built on TipTap with ProseMirror as the underlying engine. Documents are stored as TipTap JSON in the `journalEntry` TEXT column. Legacy plain-text entries render as plain paragraphs. Autosave debounces 1.5 seconds and patches the in-memory trade immediately so navigation never shows stale content.
 
 **Tag system.** Tags are stored in a dedicated `Tag` table. On first load, `AppContext` seeds the table from all existing trade tag arrays. Every subsequent tag creation writes to the database and updates global state in memory — no full reload required.
 
@@ -254,7 +265,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 **PDF generation.** `@react-pdf/renderer` runs entirely in the browser via a dynamic import with `ssr: false`.
 
-**Auto-update.** The update endpoint streams progress via Server-Sent Events through six steps — git preflight, database backup, stash, tag checkout, npm install, prisma migrate. The database backup retains the five most recent copies and is non-fatal on failure.
+
+**MAE/MFE.** Two nullable float columns on the Trade table. Entry efficiency (`MFE / (MFE + MAE)`) and exit efficiency (`PnL / MFE` on wins) are computed at read time in the analytics engine — no denormalized values stored.
+
+**Behavioral analytics.** Overtrading detection uses a statistical threshold of mean + 1.5 standard deviations of daily trade count. Risk of ruin uses a normalized edge formula derived from win rate and payoff ratio. Kelly Criterion is computed from the same inputs and displayed alongside a half-Kelly recommendation.
+
+**Theme system.** All UI colors use CSS custom properties. Financial indicators (win/loss P&L, calendar cells) use hardcoded green/red constants so they are never affected by the user's accent color selection. UI chrome (buttons, borders, active states) uses `var(--accent-green)` and updates with the theme.
+
+**Auto-update.** The update endpoint streams progress via Server-Sent Events. Detects Vercel, Docker, and write-permission issues at preflight. Uses a shadow install directory so the running server's `node_modules` is never touched until the swap completes. Deletes `.next` at the end of the pipeline after packages are fully rebuilt. Supports both git and zip-based installations.
 
 **State management.** A single React Context holds all trades, accounts, tags, and navigation state. `updateTradeInMemory` patches a single trade in the array without a full API reload — used by autosave and tag saves in the editor.
 
@@ -319,19 +337,23 @@ journedge/
 
 ## Roadmap
 
-**v3.1.0 — Current**
-- Full-page rich text journal editor
-- Tag system rebuilt at the database level
-- Template system with instrument-type scoping
-- Font family and weight picker
-- Advanced color picker with pinning and hex input
-- Text alignment
+**v3.2.0 — Current**
+- MAE/MFE tracking per trade with execution quality analytics
+- Overtrading detection and behavioral analysis
+- Risk of ruin calculator with Kelly Criterion
+- Discipline score
+- Theme consistency fixes — financial indicators always red/green
+- Calendar auto-snaps to most recent trade month
+- Robust auto-update pipeline with shadow install and environment detection
+- Import page full-width layout
 
-**v3.2.0 — Planned**
-- MAE/MFE tracking per trade
-- Overtrading detection
-- Risk of ruin calculator
-- GitHub Wiki
+**v4.0.0 — In Development**
+- Pre-trade planning
+- Strategy playbook
+- Hour-of-day performance heatmap
+- Daily risk controls
+- Position sizing calculator
+- Light mode
 
 ---
 
