@@ -62,11 +62,11 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
             <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
               <div style={{
                 width: "24px", height: "24px", borderRadius: "6px",
-                background: "rgba(0,229,122,0.15)",
+                background: "var(--accent-green-dim)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
               }}>
-                <Wallet size={12} color="#00e57a" />
+                <Wallet size={12} color="var(--accent-green)" />
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{
