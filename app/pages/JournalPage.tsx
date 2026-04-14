@@ -421,6 +421,7 @@ export default function JournalPage() {
         <h2 style={{
           fontSize: "28px", fontWeight: "800", color: "var(--text-primary)",
           letterSpacing: "-0.5px", marginBottom: "4px",
+          fontFamily: "'DM Sans', sans-serif",
         }}>
           Journal
         </h2>

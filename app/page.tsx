@@ -14,6 +14,8 @@ import JournalEditorPage from "./pages/JournalEditorPage";
 import AccountsPage from "./pages/AccountsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ExportPage from "./pages/ExportPage";
+import PlansPage from "./pages/PlansPage";
+import PlaybookPage from "./pages/PlaybookPage";
 
 function AppShell() {
   const { activePage, selectedTrade, setSelectedTrade, setTrades, trades } = useApp();
@@ -38,6 +40,8 @@ function AppShell() {
         {activePage === "journal-editor" && <JournalEditorPage />}
         {activePage === "analytics"      && <AnalyticsPage />}
         {activePage === "calendar"       && <CalendarPage />}
+        {activePage === "plans"          && <PlansPage />}
+        {activePage === "playbook"       && <PlaybookPage />}
         {activePage === "import"         && <ImportPage />}
         {activePage === "accounts"       && <AccountsPage />}
         {activePage === "export"         && <ExportPage />}
@@ -76,3 +80,4 @@ export default function Home() {
     </AppProvider>
   );
 }
+

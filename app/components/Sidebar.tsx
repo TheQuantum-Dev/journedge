@@ -1,7 +1,8 @@
 "use client";
 import {
   LayoutDashboard, BookOpen, BarChart2, Calendar,
-  Upload, PlusCircle, Settings, Wallet, ChevronDown, FileDown,
+  Upload, PlusCircle, Settings, Wallet, ChevronDown,
+  FileDown, ClipboardList, Library,
 } from "lucide-react";
 import Image from "next/image";
 import { useApp } from "../context/AppContext";
@@ -9,13 +10,15 @@ import { PageId, Account } from "../lib/types";
 import { useState } from "react";
 
 const NAV_ITEMS: { icon: any; label: string; id: PageId }[] = [
-  { icon: LayoutDashboard, label: "Dashboard",    id: "dashboard" },
-  { icon: BookOpen,        label: "Journal",       id: "journal" },
-  { icon: BarChart2,       label: "Analytics",     id: "analytics" },
-  { icon: Calendar,        label: "Calendar",      id: "calendar" },
-  { icon: Wallet,          label: "Accounts",      id: "accounts" },
-  { icon: Upload,          label: "Import Trades", id: "import" },
-  { icon: FileDown,        label: "Export",        id: "export" },
+  { icon: LayoutDashboard, label: "Dashboard",   id: "dashboard" },
+  { icon: BookOpen,        label: "Journal",      id: "journal"   },
+  { icon: BarChart2,       label: "Analytics",    id: "analytics" },
+  { icon: Calendar,        label: "Calendar",     id: "calendar"  },
+  { icon: ClipboardList,   label: "Trade Plans",  id: "plans"     },
+  { icon: Library,         label: "Playbook",     id: "playbook"  },
+  { icon: Wallet,          label: "Accounts",     id: "accounts"  },
+  { icon: Upload,          label: "Import Trades",id: "import"    },
+  { icon: FileDown,        label: "Export",       id: "export"    },
 ];
 
 interface SidebarProps {
@@ -55,16 +58,14 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
               width: "100%", display: "flex", alignItems: "center",
               justifyContent: "space-between", padding: "10px 12px",
               borderRadius: "8px", border: "1px solid var(--border)",
-              background: "var(--bg-card)", cursor: "pointer",
-              gap: "8px",
+              background: "var(--bg-card)", cursor: "pointer", gap: "8px",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
               <div style={{
                 width: "24px", height: "24px", borderRadius: "6px",
                 background: "var(--accent-green-dim)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
               }}>
                 <Wallet size={12} color="var(--accent-green)" />
               </div>
@@ -75,9 +76,7 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
                 }}>
                   {activeAccount?.name || "Select Account"}
                 </div>
-                <div style={{ fontSize: "10px", color: "#8888aa" }}>
-                  {activeAccount?.broker || ""}
-                </div>
+                <div style={{ fontSize: "10px", color: "#8888aa" }}>{activeAccount?.broker || ""}</div>
               </div>
             </div>
             <ChevronDown
@@ -89,13 +88,11 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
             />
           </button>
 
-          {/* Dropdown */}
           {showAccountMenu && (
             <div style={{
-              position: "absolute", top: "calc(100% - 8px)", left: "12px",
-              right: "12px", background: "var(--bg-card)",
-              border: "1px solid var(--border)", borderRadius: "8px",
-              zIndex: 100, overflow: "hidden",
+              position: "absolute", top: "calc(100% - 8px)", left: "12px", right: "12px",
+              background: "var(--bg-card)", border: "1px solid var(--border)",
+              borderRadius: "8px", zIndex: 100, overflow: "hidden",
               boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
             }}>
               {accounts.map((account: Account) => (
@@ -110,18 +107,13 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: "12px", fontWeight: "600", color: "#f0f0ff" }}>
-                      {account.name}
-                    </div>
+                    <div style={{ fontSize: "12px", fontWeight: "600", color: "#f0f0ff" }}>{account.name}</div>
                     <div style={{ fontSize: "10px", color: "#8888aa" }}>
                       {account.broker} · {account.currency} {account.initialBalance.toLocaleString()}
                     </div>
                   </div>
                   {activeAccount?.id === account.id && (
-                    <div style={{
-                      width: "6px", height: "6px", borderRadius: "50%",
-                      background: "#00e57a", flexShrink: 0,
-                    }} />
+                    <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-green)", flexShrink: 0 }} />
                   )}
                 </button>
               ))}
@@ -164,7 +156,7 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
       )}
 
       {/* Nav Items */}
-      <nav style={{ flex: 1, padding: "0 12px" }}>
+      <nav style={{ flex: 1, padding: "0 12px", overflowY: "auto" }}>
         {NAV_ITEMS.map(({ icon: Icon, label, id }) => {
           const active = activePage === id || (id === "journal" && activePage === "journal-editor");
           return (
@@ -201,7 +193,7 @@ export default function Sidebar({ onAddTrade }: SidebarProps) {
         })}
       </nav>
 
-      {/* Add Trade Button */}
+      {/* Add Trade */}
       <div style={{ padding: "0 12px 16px" }}>
         <button
           onClick={onAddTrade}
