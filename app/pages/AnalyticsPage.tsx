@@ -75,7 +75,6 @@ function drawdownStats(sortedTrades: Trade[], initialBalance: number) {
   let longestDdDays = 0;
   let inDrawdown = false;
   const ddCurve: { date: string; dd: number; equity: number }[] = [];
-
   for (const t of sortedTrades) {
     equity += t.pnl;
     if (equity > peak) {
@@ -96,7 +95,6 @@ function drawdownStats(sortedTrades: Trade[], initialBalance: number) {
     if (ddAbs < maxDd) { maxDd = ddAbs; maxDdPct = dd; }
     ddCurve.push({ date: normalizeDate(t.date), dd: parseFloat(dd.toFixed(2)), equity: parseFloat(equity.toFixed(2)) });
   }
-
   let currentDdDays = 0;
   if (inDrawdown && currentDdStart) {
     currentDdDays = Math.round((Date.now() - new Date(normalizeDate(currentDdStart)).getTime()) / 86400000);
@@ -144,6 +142,43 @@ function byDayOfWeek(trades: Trade[]): { day: string; pnl: number; count: number
     count: map[d]?.count || 0,
     wr: map[d]?.count ? Math.round((map[d].wins / map[d].count) * 100) : 0,
   }));
+}
+
+// Build hour-of-day stats from trades that have hourOfDay logged
+function byHourOfDay(trades: Trade[]): {
+  hour: number;
+  label: string;
+  count: number;
+  wins: number;
+  totalPnl: number;
+  avgPnl: number;
+  winRate: number;
+}[] {
+  const map: Record<number, { count: number; wins: number; totalPnl: number }> = {};
+  for (const t of trades) {
+    if (t.hourOfDay == null) continue;
+    const h = t.hourOfDay;
+    if (!map[h]) map[h] = { count: 0, wins: 0, totalPnl: 0 };
+    map[h].count++;
+    map[h].totalPnl += t.pnl;
+    if (t.status === "win") map[h].wins++;
+  }
+  return Object.entries(map)
+    .map(([h, d]) => {
+      const hour = parseInt(h, 10);
+      const suffix = hour < 12 ? "AM" : "PM";
+      const display = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return {
+        hour,
+        label: `${display}${suffix}`,
+        count: d.count,
+        wins: d.wins,
+        totalPnl: parseFloat(d.totalPnl.toFixed(2)),
+        avgPnl:   parseFloat((d.totalPnl / d.count).toFixed(2)),
+        winRate:  Math.round((d.wins / d.count) * 100),
+      };
+    })
+    .sort((a, b) => a.hour - b.hour);
 }
 
 function streaks(trades: Trade[]) {
@@ -228,12 +263,13 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
   );
 }
 
-type TabId = "overview" | "risk" | "time" | "rmultiples" | "execution" | "behavior";
+type TabId = "overview" | "risk" | "time" | "heatmap" | "rmultiples" | "execution" | "behavior";
 
 export default function AnalyticsPage() {
   const { trades, activeAccount } = useApp();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [riskPct, setRiskPct]     = useState(2);
+  const [heatmapMetric, setHeatmapMetric] = useState<"pnl" | "winrate" | "count">("pnl");
 
   const stats = useMemo(() => {
     if (trades.length === 0) return null;
@@ -284,6 +320,7 @@ export default function AnalyticsPage() {
 
     const rolling = trades.length >= 20 ? rollingWinRate(sorted, 20) : [];
     const dowData = byDayOfWeek(trades);
+    const hourData = byHourOfDay(trades);
     const streak  = streaks(trades);
 
     const bestTrade  = trades.reduce((b, t) => t.pnl > b.pnl ? t : b, trades[0]);
@@ -320,7 +357,6 @@ export default function AnalyticsPage() {
     const avgMae = hasMaeMfe ? maeFdTrades.reduce((s, t) => s + t.mae!, 0) / maeFdTrades.length : 0;
     const avgMfe = hasMaeMfe ? maeFdTrades.reduce((s, t) => s + t.mfe!, 0) / maeFdTrades.length : 0;
 
-    // Entry efficiency: MFE / (MFE + MAE) — 100% = entered at perfect low for longs
     const entryEff = hasMaeMfe
       ? maeFdTrades.reduce((s, t) => {
           const total = t.mfe! + t.mae!;
@@ -328,13 +364,11 @@ export default function AnalyticsPage() {
         }, 0) / maeFdTrades.length
       : 0;
 
-    // Exit efficiency (wins only): PnL / MFE — 100% = exited at perfect high
     const winsWithMfe = maeFdTrades.filter((t) => t.status === "win" && t.mfe! > 0);
     const exitEff = winsWithMfe.length > 0
       ? winsWithMfe.reduce((s, t) => s + Math.min(100, (t.pnl / t.mfe!) * 100), 0) / winsWithMfe.length
       : 0;
 
-    // Trade efficiency: how much of the full range (MAE to MFE) was captured
     const tradeEff = hasMaeMfe
       ? maeFdTrades.reduce((s, t) => {
           const range = t.mfe! + t.mae!;
@@ -342,7 +376,6 @@ export default function AnalyticsPage() {
         }, 0) / maeFdTrades.length
       : 0;
 
-    // MAE/MFE per-trade chart (last 20 with data)
     const maeMfeChart = maeFdTrades.slice(-20).map((t, i) => ({
       trade: i + 1,
       mae: parseFloat(t.mae!.toFixed(2)),
@@ -360,14 +393,12 @@ export default function AnalyticsPage() {
     const dayCountValues  = Object.values(dayCountMap);
     const meanDailyTrades = dayCountValues.reduce((s, v) => s + v, 0) / Math.max(dayCountValues.length, 1);
     const sdDailyTrades   = stdDev(dayCountValues);
-    // Threshold: mean + 1.5 std dev, minimum of mean + 2 to avoid noise with small samples
     const overtradingThreshold = Math.max(meanDailyTrades + 1.5 * sdDailyTrades, meanDailyTrades + 2);
     const overtradingDays = Object.entries(dayCountMap)
       .filter(([, c]) => c > overtradingThreshold)
       .sort(([, a], [, b]) => b - a)
       .map(([date, count]) => ({ date, count }));
 
-    // Revenge trade detection: same day, loss followed by another trade
     const dayTradesMap: Record<string, Trade[]> = {};
     for (const t of trades) {
       const d = normalizeDate(t.date);
@@ -387,7 +418,6 @@ export default function AnalyticsPage() {
       }
     }
 
-    // Discipline score: start at 100, deduct for red flags
     let disciplineScore = 100;
     disciplineScore -= Math.min(40, overtradingDays.length * 8);
     disciplineScore -= Math.min(25, revengeCount * 5);
@@ -401,27 +431,26 @@ export default function AnalyticsPage() {
       wins, losses, totalPnl, winRate, avgWin, avgLoss, profitFactor,
       equityCurve, daily, sharpe, sortino, calmar, exp,
       maxDd, maxDdPct, longestDdDays, currentDdDays, ddCurve,
-      rHistogram, avgR, rolling, dowData, streak,
+      rHistogram, avgR, rolling, dowData, hourData, streak,
       bestTrade, worstTrade, symbolData, tagData, tradingDays,
       hasMaeMfe, avgMae, avgMfe, entryEff, exitEff, tradeEff, maeMfeChart, maeFdCount: maeFdTrades.length,
-      overtradingDays, revengeCount, disciplineScore, meanDailyTrades, maxDayTrades,
+      overtradingDays, revengeCount, disciplineScore, meanDailyTrades, maxDayTrades, sdDailyTrades,
     };
   }, [trades, activeAccount]);
 
-  // RoR is interactive — computed outside useMemo
+  // RoR interactive — outside useMemo
   const rorData = (() => {
     if (!stats) return null;
     const b = stats.avgLoss > 0 ? stats.avgWin / stats.avgLoss : 1;
     const p = stats.winRate / 100;
     const q = 1 - p;
     const kelly = Math.max(0, (p * b - q) / b) * 100;
-    // Normalized edge: -1 (no edge) to +1 (perfect edge)
     const edgeN = (p * b - q) / Math.max(p * b + q, 0.001);
     const f   = riskPct / 100;
     const ror = edgeN <= 0
       ? 100
       : Math.min(100, Math.pow((1 - edgeN) / (1 + edgeN), 1 / f) * 100);
-    const maxSafeRisk = kelly * 0.5; // half-Kelly recommended
+    const maxSafeRisk = kelly * 0.5;
     return { kelly: parseFloat(kelly.toFixed(1)), ror: parseFloat(ror.toFixed(2)), maxSafeRisk: parseFloat(maxSafeRisk.toFixed(1)), edgeN };
   })();
 
@@ -458,12 +487,13 @@ export default function AnalyticsPage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: "4px", marginBottom: "24px", background: "var(--bg-card)", borderRadius: "10px", padding: "4px", border: "1px solid var(--border)", width: "fit-content", flexWrap: "wrap" }}>
-        <Tab label="Overview"   active={activeTab === "overview"}   onClick={() => setActiveTab("overview")} />
-        <Tab label="Risk"       active={activeTab === "risk"}       onClick={() => setActiveTab("risk")} />
-        <Tab label="Time"       active={activeTab === "time"}       onClick={() => setActiveTab("time")} />
-        <Tab label="R-Multiples" active={activeTab === "rmultiples"} onClick={() => setActiveTab("rmultiples")} />
-        <Tab label="Execution"  active={activeTab === "execution"}  onClick={() => setActiveTab("execution")} />
-        <Tab label="Behavior"   active={activeTab === "behavior"}   onClick={() => setActiveTab("behavior")} />
+        <Tab label="Overview"    active={activeTab === "overview"}    onClick={() => setActiveTab("overview")} />
+        <Tab label="Risk"        active={activeTab === "risk"}        onClick={() => setActiveTab("risk")} />
+        <Tab label="Time"        active={activeTab === "time"}        onClick={() => setActiveTab("time")} />
+        <Tab label="Heatmap"     active={activeTab === "heatmap"}     onClick={() => setActiveTab("heatmap")} />
+        <Tab label="R-Multiples" active={activeTab === "rmultiples"}  onClick={() => setActiveTab("rmultiples")} />
+        <Tab label="Execution"   active={activeTab === "execution"}   onClick={() => setActiveTab("execution")} />
+        <Tab label="Behavior"    active={activeTab === "behavior"}    onClick={() => setActiveTab("behavior")} />
       </div>
 
       {/* Overview */}
@@ -476,9 +506,9 @@ export default function AnalyticsPage() {
             <MetricCard label="Expectancy"    value={`${stats.exp >= 0 ? "+" : ""}$${stats.exp.toFixed(2)}`} positive={stats.exp >= 0} icon={Activity} sub="Per trade" />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "20px" }}>
-            <MetricCard label="Avg Win"    value={`+$${stats.avgWin.toFixed(2)}`}   positive icon={Award} />
-            <MetricCard label="Avg Loss"   value={`-$${stats.avgLoss.toFixed(2)}`}  positive={false} icon={TrendingDown} />
-            <MetricCard label="Best Trade" value={`+$${stats.bestTrade.pnl.toFixed(2)}`} positive icon={Award} sub={stats.bestTrade.underlying} />
+            <MetricCard label="Avg Win"     value={`+$${stats.avgWin.toFixed(2)}`}  positive icon={Award} />
+            <MetricCard label="Avg Loss"    value={`-$${stats.avgLoss.toFixed(2)}`} positive={false} icon={TrendingDown} />
+            <MetricCard label="Best Trade"  value={`+$${stats.bestTrade.pnl.toFixed(2)}`} positive icon={Award} sub={stats.bestTrade.underlying} />
             <MetricCard label="Worst Trade" value={`$${stats.worstTrade.pnl.toFixed(2)}`} positive={false} icon={AlertTriangle} sub={stats.worstTrade.underlying} />
           </div>
 
@@ -494,7 +524,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                 <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`$${v.toFixed(2)}`, "Equity"]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [`$${v.toFixed(2)}`, "Equity"]) as any} />
                 <Area type="monotone" dataKey="equity" stroke="#00e57a" strokeWidth={2} fill="url(#equityGrad)" dot={false} activeDot={{ r: 4, fill: "#00e57a" }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -507,7 +537,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                   <XAxis dataKey="symbol" tick={axisStyle} axisLine={false} tickLine={false} />
                   <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`$${v.toFixed(2)}`, "P&L"]} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [`$${v.toFixed(2)}`, "P&L"]) as any} />
                   <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
                     {stats.symbolData.map((e) => <Cell key={e.symbol} fill={e.pnl >= 0 ? "#00e57a" : "#ff4d6a"} />)}
                   </Bar>
@@ -522,7 +552,7 @@ export default function AnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                     <XAxis dataKey="tag" tick={axisStyle} axisLine={false} tickLine={false} />
                     <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`$${v.toFixed(2)}`, "P&L"]} />
+                    <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [`$${v.toFixed(2)}`, "P&L"]) as any} />
                     <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
                       {stats.tagData.map((e) => <Cell key={e.tag} fill={e.pnl >= 0 ? "#00e57a" : "#ff4d6a"} />)}
                     </Bar>
@@ -575,21 +605,20 @@ export default function AnalyticsPage() {
         </>
       )}
 
-      {/* Risk Metrics */}
+      {/* Risk */}
       {activeTab === "risk" && (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
-            <MetricCard label="Sharpe Ratio" value={stats.sharpe.toFixed(2)} positive={stats.sharpe > 1} neutral={stats.sharpe === 0} icon={Activity}
+            <MetricCard label="Sharpe Ratio"  value={stats.sharpe.toFixed(2)}  positive={stats.sharpe > 1}  neutral={stats.sharpe === 0}  icon={Activity}
               sub={stats.sharpe > 2 ? "Excellent" : stats.sharpe > 1 ? "Good" : stats.sharpe > 0 ? "Below avg" : "N/A (<5 days)"} />
             <MetricCard label="Sortino Ratio" value={stats.sortino.toFixed(2)} positive={stats.sortino > 1} neutral={stats.sortino === 0} icon={TrendingUp}
               sub={stats.sortino > 2 ? "Strong downside protection" : stats.sortino > 1 ? "Acceptable" : "Review loss management"} />
-            <MetricCard label="Calmar Ratio" value={stats.calmar === 0 ? "N/A" : stats.calmar.toFixed(2)} positive={stats.calmar > 1} neutral={stats.calmar === 0} icon={Zap} sub="Annualized return / Max DD" />
+            <MetricCard label="Calmar Ratio"  value={stats.calmar === 0 ? "N/A" : stats.calmar.toFixed(2)} positive={stats.calmar > 1} neutral={stats.calmar === 0} icon={Zap} sub="Annualized return / Max DD" />
           </div>
-
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
-            <MetricCard label="Max Drawdown" value={`$${Math.abs(stats.maxDd).toFixed(2)}`} positive={false} neutral={stats.maxDd === 0} icon={TrendingDown}
+            <MetricCard label="Max Drawdown"       value={`$${Math.abs(stats.maxDd).toFixed(2)}`} positive={false} neutral={stats.maxDd === 0} icon={TrendingDown}
               sub={stats.maxDdPct !== 0 ? `${stats.maxDdPct.toFixed(2)}% from peak` : "No drawdown"} />
-            <MetricCard label="Max DD Duration" value={stats.longestDdDays === 0 ? "0 days" : `${stats.longestDdDays}d`} positive={stats.longestDdDays < 7} neutral={stats.longestDdDays === 0} icon={Calendar} sub="Longest peak → recovery" />
+            <MetricCard label="Max DD Duration"    value={stats.longestDdDays === 0 ? "0 days" : `${stats.longestDdDays}d`} positive={stats.longestDdDays < 7} neutral={stats.longestDdDays === 0} icon={Calendar} sub="Longest peak → recovery" />
             <MetricCard label="Current DD Duration" value={stats.currentDdDays === 0 ? "None" : `${stats.currentDdDays}d`} positive={stats.currentDdDays === 0} icon={AlertTriangle}
               sub={stats.currentDdDays > 0 ? "Still in drawdown" : "At or above high water mark"} />
           </div>
@@ -606,7 +635,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                 <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`${v.toFixed(2)}%`, "Drawdown"]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [`${v.toFixed(2)}%`, "Drawdown"]) as any} />
                 <ReferenceLine y={0} stroke="#00e57a" strokeDasharray="4 4" strokeWidth={1} />
                 <Area type="monotone" dataKey="dd" stroke="#ff4d6a" strokeWidth={2} fill="url(#ddGrad)" dot={false} />
               </AreaChart>
@@ -620,7 +649,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                   <XAxis dataKey="trade" tick={axisStyle} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 100]} tick={axisStyle} axisLine={false} tickLine={false} unit="%" />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`${v}%`, "Win Rate"]} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [`${v}%`, "Win Rate"]) as any} />
                   <ReferenceLine y={50} stroke="#8888aa" strokeDasharray="4 4" strokeWidth={1} />
                   <Line type="monotone" dataKey="wr" stroke="#4d9fff" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                 </LineChart>
@@ -631,10 +660,10 @@ export default function AnalyticsPage() {
           <SectionCard title="Metric Definitions">
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               {[
-                { name: "Sharpe Ratio",  formula: "(Mean Daily P&L / Std Dev Daily P&L) × √252",  what: "Risk-adjusted return per unit of total volatility. >1 = good, >2 = excellent." },
-                { name: "Sortino Ratio", formula: "(Mean Daily P&L / Downside Std Dev) × √252",   what: "Like Sharpe but only penalises downside volatility. More relevant for traders." },
-                { name: "Calmar Ratio",  formula: "Annualized Return % / |Max Drawdown %|",       what: "How much return you earn per unit of max drawdown risk. >1 = acceptable." },
-                { name: "Expectancy",    formula: "(Win% × Avg Win) − (Loss% × Avg Loss)",        what: "Expected dollar profit per trade. The single most important metric to be positive." },
+                { name: "Sharpe Ratio",  formula: "(Mean Daily P&L / Std Dev Daily P&L) × √252", what: "Risk-adjusted return per unit of total volatility. >1 = good, >2 = excellent." },
+                { name: "Sortino Ratio", formula: "(Mean Daily P&L / Downside Std Dev) × √252",  what: "Like Sharpe but only penalises downside volatility. More relevant for traders." },
+                { name: "Calmar Ratio",  formula: "Annualized Return % / |Max Drawdown %|",      what: "How much return you earn per unit of max drawdown risk. >1 = acceptable." },
+                { name: "Expectancy",    formula: "(Win% × Avg Win) − (Loss% × Avg Loss)",       what: "Expected dollar profit per trade. The single most important metric to be positive." },
               ].map(({ name, formula, what }) => (
                 <div key={name} style={{ background: "var(--bg-secondary)", borderRadius: "10px", padding: "14px 16px" }}>
                   <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "6px" }}>{name}</div>
@@ -647,7 +676,7 @@ export default function AnalyticsPage() {
         </>
       )}
 
-      {/* Time Analysis */}
+      {/* Time */}
       {activeTab === "time" && (
         <>
           <SectionCard title="P&L by Day of Week" subtitle="Which days are most profitable.">
@@ -667,7 +696,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                 <XAxis dataKey="day" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`$${v.toFixed(2)}`, "Total P&L"]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [`$${v.toFixed(2)}`, "Total P&L"]) as any} />
                 <ReferenceLine y={0} stroke="#8888aa" strokeWidth={1} />
                 <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
                   {stats.dowData.map((e) => <Cell key={e.day} fill={e.pnl >= 0 ? "#00e57a" : "#ff4d6a"} />)}
@@ -682,7 +711,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                 <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`$${v.toFixed(2)}`, "Daily P&L"]} />
+                <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [`$${v.toFixed(2)}`, "Daily P&L"]) as any} />
                 <ReferenceLine y={0} stroke="#8888aa" strokeWidth={1} />
                 <Bar dataKey="pnl" radius={[3, 3, 0, 0]}>
                   {stats.daily.map((e, i) => <Cell key={i} fill={e.pnl >= 0 ? "#00e57a" : "#ff4d6a"} />)}
@@ -713,6 +742,159 @@ export default function AnalyticsPage() {
         </>
       )}
 
+      {/* Heatmap — Phase 4 */}
+      {activeTab === "heatmap" && (
+        <>
+          {stats.hourData.length === 0 ? (
+            <div style={{
+              background: "var(--bg-card)", border: "1px solid var(--border)",
+              borderRadius: "16px", padding: "60px", textAlign: "center",
+            }}>
+              <div style={{
+                width: "56px", height: "56px", borderRadius: "14px",
+                background: "var(--accent-green-dim)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 20px",
+              }}>
+                <Clock size={24} color="var(--accent-green)" />
+              </div>
+              <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "8px" }}>
+                No time data yet
+              </h3>
+              <p style={{ color: "var(--text-muted)", fontSize: "14px", maxWidth: "400px", margin: "0 auto" }}>
+                Log entry times on your trades to unlock hour-of-day performance analysis. Entry time is captured automatically on import if your broker CSV includes it.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Stats strip */}
+              {(() => {
+                const best  = stats.hourData.reduce((b, h) => h.totalPnl > b.totalPnl ? h : b, stats.hourData[0]);
+                const worst = stats.hourData.reduce((w, h) => h.totalPnl < w.totalPnl ? h : w, stats.hourData[0]);
+                const busiest = stats.hourData.reduce((b, h) => h.count > b.count ? h : b, stats.hourData[0]);
+                const withTime = trades.filter((t) => t.hourOfDay != null).length;
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "24px" }}>
+                    <MetricCard label="Hours Tracked"  value={String(stats.hourData.length)}     neutral icon={Clock}       sub={`${withTime} of ${trades.length} trades`} />
+                    <MetricCard label="Best Hour"      value={best.label}                         positive icon={TrendingUp}  sub={`+$${best.totalPnl.toFixed(0)} · ${best.winRate}% WR`} />
+                    <MetricCard label="Worst Hour"     value={worst.label}                        positive={false} icon={TrendingDown} sub={`$${worst.totalPnl.toFixed(0)} · ${worst.winRate}% WR`} />
+                    <MetricCard label="Busiest Hour"   value={busiest.label}                      neutral icon={BarChart2}   sub={`${busiest.count} trades`} />
+                  </div>
+                );
+              })()}
+
+              {/* Metric toggle */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+                {([
+                  { id: "pnl",     label: "Total P&L"  },
+                  { id: "winrate", label: "Win Rate"    },
+                  { id: "count",   label: "Trade Count" },
+                ] as const).map(({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setHeatmapMetric(id)}
+                    style={{
+                      padding: "7px 16px", borderRadius: "20px", border: "1px solid",
+                      borderColor: heatmapMetric === id ? "var(--accent-green)" : "var(--border)",
+                      background: heatmapMetric === id ? "var(--accent-green-dim)" : "transparent",
+                      color: heatmapMetric === id ? "var(--accent-green)" : "var(--text-muted)",
+                      fontSize: "12px", fontWeight: "600", cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Bar chart */}
+              <SectionCard
+                title="Hour-of-Day Performance"
+                subtitle={
+                  heatmapMetric === "pnl"
+                    ? "Total P&L by hour. Identifies your most and least profitable trading windows."
+                    : heatmapMetric === "winrate"
+                    ? "Win rate by hour. Reveals which time slots your setups convert best."
+                    : "Trade volume by hour. Shows when you are most active."
+                }
+              >
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={stats.hourData} margin={{ bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
+                    <XAxis dataKey="label" tick={axisStyle} axisLine={false} tickLine={false} />
+                    <YAxis tick={axisStyle} axisLine={false} tickLine={false}
+                      unit={heatmapMetric === "winrate" ? "%" : heatmapMetric === "pnl" ? "" : ""}
+                    />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={((v: any, _name: any, entry: any) => {
+                        const h = entry?.payload;
+                        if (!h) return [v, ""];
+                        if (heatmapMetric === "pnl")
+                          return [`$${v.toFixed(2)}`, `${h.count} trades · ${h.winRate}% WR`];
+                        if (heatmapMetric === "winrate")
+                          return [`${v}%`, `${h.count} trades · $${h.totalPnl.toFixed(0)} P&L`];
+                        return [v, `$${h.totalPnl.toFixed(0)} · ${h.winRate}% WR`];
+                      }) as any}
+                    />
+                    {heatmapMetric === "pnl" && <ReferenceLine y={0} stroke="#8888aa" strokeWidth={1} />}
+                    <Bar
+                      dataKey={heatmapMetric === "pnl" ? "totalPnl" : heatmapMetric === "winrate" ? "winRate" : "count"}
+                      radius={[4, 4, 0, 0]}
+                    >
+                      {stats.hourData.map((h) => {
+                        let fill: string;
+                        if (heatmapMetric === "pnl")     fill = h.totalPnl >= 0 ? "#00e57a" : "#ff4d6a";
+                        else if (heatmapMetric === "winrate") fill = h.winRate >= 60 ? "#00e57a" : h.winRate >= 40 ? "#fbbf24" : "#ff4d6a";
+                        else fill = "#4d9fff";
+                        return <Cell key={h.hour} fill={fill} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </SectionCard>
+
+              {/* Hour detail table */}
+              <SectionCard title="Breakdown by Hour">
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {stats.hourData.map((h) => (
+                    <div key={h.hour} style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      padding: "10px 14px", background: "var(--bg-secondary)",
+                      borderRadius: "8px",
+                    }}>
+                      <div style={{ width: "48px", fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", flexShrink: 0 }}>
+                        {h.label}
+                      </div>
+                      {/* P&L bar */}
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ flex: 1, background: "var(--bg-card)", borderRadius: "4px", height: "6px", overflow: "hidden" }}>
+                          <div style={{
+                            width: `${Math.min(100, Math.abs(h.totalPnl) / Math.max(...stats.hourData.map((x) => Math.abs(x.totalPnl))) * 100)}%`,
+                            height: "100%",
+                            background: h.totalPnl >= 0 ? "#00e57a" : "#ff4d6a",
+                            borderRadius: "4px",
+                          }} />
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "700", color: h.totalPnl >= 0 ? "#00e57a" : "#ff4d6a", width: "72px", textAlign: "right", flexShrink: 0 }}>
+                          {h.totalPnl >= 0 ? "+" : ""}${h.totalPnl.toFixed(0)}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "12px", fontWeight: "600", color: h.winRate >= 50 ? "#00e57a" : "#ff4d6a", width: "44px", textAlign: "center", flexShrink: 0 }}>
+                        {h.winRate}% WR
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--text-muted)", width: "60px", textAlign: "right", flexShrink: 0 }}>
+                        {h.count} trade{h.count !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </>
+          )}
+        </>
+      )}
+
       {/* R-Multiples */}
       {activeTab === "rmultiples" && (
         <>
@@ -729,7 +911,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                   <XAxis dataKey="bucket" tick={axisStyle} axisLine={false} tickLine={false} />
                   <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [v, "Trades"]} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [v, "Trades"]) as any} />
                   <ReferenceLine x="+0R" stroke="#8888aa" strokeDasharray="4 4" />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                     {stats.rHistogram.map((e) => <Cell key={e.bucket} fill={e.positive ? "#00e57a" : "#ff4d6a"} />)}
@@ -765,22 +947,17 @@ export default function AnalyticsPage() {
         </>
       )}
 
-      {/* Execution — MAE / MFE */}
+      {/* Execution */}
       {activeTab === "execution" && (
         <>
           {!stats.hasMaeMfe ? (
-            <div style={{
-              background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px",
-              padding: "48px", textAlign: "center",
-            }}>
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "48px", textAlign: "center" }}>
               <div style={{ width: "56px", height: "56px", borderRadius: "14px", background: "var(--accent-green-dim)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                 <Target size={24} color="var(--accent-green)" />
               </div>
-              <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "8px" }}>
-                No MAE/MFE data yet
-              </h3>
+              <h3 style={{ fontSize: "18px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "8px" }}>No MAE/MFE data yet</h3>
               <p style={{ color: "var(--text-muted)", fontSize: "14px", maxWidth: "400px", margin: "0 auto" }}>
-                Log MAE and MFE on trades using the quick view panel or add trade form. These two numbers unlock entry and exit quality analysis.
+                Log MAE and MFE on trades using the quick view panel or add trade form.
               </p>
             </div>
           ) : (
@@ -788,26 +965,23 @@ export default function AnalyticsPage() {
               <div style={{ marginBottom: "12px", fontSize: "12px", color: "var(--text-muted)" }}>
                 {stats.maeFdCount} of {trades.length} trades have MAE/MFE logged
               </div>
-
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "20px" }}>
-                <MetricCard label="Avg MAE" value={`$${stats.avgMae.toFixed(2)}`} positive={false} icon={TrendingDown} sub="Avg worst excursion" />
-                <MetricCard label="Avg MFE" value={`$${stats.avgMfe.toFixed(2)}`} positive icon={TrendingUp} sub="Avg best excursion" />
-                <MetricCard label="Entry Efficiency" value={`${stats.entryEff.toFixed(1)}%`} positive={stats.entryEff >= 60} icon={Target}
-                  sub="MFE / (MFE + MAE) — higher is better" />
-                <MetricCard label="Exit Efficiency" value={`${stats.exitEff.toFixed(1)}%`} positive={stats.exitEff >= 60} icon={Zap}
-                  sub="PnL / MFE on wins — higher = less left on table" />
+                <MetricCard label="Avg MAE"          value={`$${stats.avgMae.toFixed(2)}`}    positive={false} icon={TrendingDown} sub="Avg worst excursion" />
+                <MetricCard label="Avg MFE"          value={`$${stats.avgMfe.toFixed(2)}`}    positive icon={TrendingUp} sub="Avg best excursion" />
+                <MetricCard label="Entry Efficiency" value={`${stats.entryEff.toFixed(1)}%`}  positive={stats.entryEff >= 60} icon={Target} sub="MFE / (MFE + MAE) — higher is better" />
+                <MetricCard label="Exit Efficiency"  value={`${stats.exitEff.toFixed(1)}%`}   positive={stats.exitEff >= 60} icon={Zap} sub="PnL / MFE on wins — higher = less left on table" />
               </div>
 
-              <SectionCard
-                title="MAE vs MFE Per Trade"
-                subtitle="Each bar pair shows how far the trade went against you (MAE) vs in your favor (MFE). Good trades show small MAE and large MFE."
-              >
+              <SectionCard title="MAE vs MFE Per Trade" subtitle="Each bar pair shows how far the trade went against you (MAE) vs in your favor (MFE).">
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={stats.maeMfeChart} barGap={2}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
-                    <XAxis dataKey="trade" tick={axisStyle} axisLine={false} tickLine={false} label={{ value: "Trade #", position: "insideBottom", offset: -2, fill: "#8888aa", fontSize: 10 }} />
+                    <XAxis dataKey="trade" tick={axisStyle} axisLine={false} tickLine={false} />
                     <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: string) => [`$${v}`, name === "mfe" ? "MFE" : "MAE"]} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={((v: any, name: any) => [`$${v}`, name === "mfe" ? "MFE" : "MAE"]) as any}
+                    />
                     <Bar dataKey="mfe" fill="#00e57a" radius={[4, 4, 0, 0]} name="mfe" />
                     <Bar dataKey="mae" fill="#ff4d6a" radius={[4, 4, 0, 0]} name="mae" />
                   </BarChart>
@@ -817,26 +991,10 @@ export default function AnalyticsPage() {
               <SectionCard title="How to Use These Numbers">
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   {[
-                    {
-                      name: "Entry Efficiency",
-                      formula: "MFE / (MFE + MAE) × 100",
-                      what: "Measures how close to the optimal entry price you got. 100% = you entered at the exact low for a long. Below 50% means MAE is dominating — your entries are early or late.",
-                    },
-                    {
-                      name: "Exit Efficiency",
-                      formula: "PnL / MFE × 100 (winning trades)",
-                      what: "Measures how much of the maximum available gain you captured before exiting. Below 60% means you're consistently leaving money on the table.",
-                    },
-                    {
-                      name: "MAE as Risk Proxy",
-                      formula: "Avg MAE vs Avg Loss",
-                      what: "If avg MAE >> avg loss, you're stopping out near the worst point rather than giving trades room. If avg MAE << avg loss, your stops may be too tight.",
-                    },
-                    {
-                      name: "MFE as Target Proxy",
-                      formula: "Avg MFE vs Avg Win",
-                      what: "If avg MFE >> avg win, you're exiting winners far too early. A large gap here is where most traders lose edge — exits are harder to get right than entries.",
-                    },
+                    { name: "Entry Efficiency", formula: "MFE / (MFE + MAE) × 100",        what: "Measures how close to the optimal entry price you got. 100% = entered at the exact low for a long. Below 50% means MAE is dominating." },
+                    { name: "Exit Efficiency",  formula: "PnL / MFE × 100 (winning trades)", what: "How much of the maximum available gain you captured. Below 60% means leaving money on the table consistently." },
+                    { name: "MAE as Risk Proxy", formula: "Avg MAE vs Avg Loss",            what: "If avg MAE >> avg loss, you're stopping out near the worst point. If avg MAE << avg loss, stops may be too tight." },
+                    { name: "MFE as Target Proxy", formula: "Avg MFE vs Avg Win",           what: "If avg MFE >> avg win, you're exiting winners far too early. This is where most traders lose their edge." },
                   ].map(({ name, formula, what }) => (
                     <div key={name} style={{ background: "var(--bg-secondary)", borderRadius: "10px", padding: "14px 16px" }}>
                       <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "6px" }}>{name}</div>
@@ -851,10 +1009,9 @@ export default function AnalyticsPage() {
         </>
       )}
 
-      {/* Behavior — Overtrading + Risk of Ruin */}
+      {/* Behavior */}
       {activeTab === "behavior" && (
         <>
-          {/* Overtrading */}
           <div style={{ marginBottom: "8px" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>Overtrading Detection</h3>
             <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
@@ -863,37 +1020,14 @@ export default function AnalyticsPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "20px" }}>
-            <MetricCard
-              label="Discipline Score"
-              value={`${stats.disciplineScore}/100`}
-              positive={stats.disciplineScore >= 70}
-              neutral={stats.disciplineScore === 100}
-              icon={Brain}
-              sub={stats.disciplineScore >= 80 ? "Consistent" : stats.disciplineScore >= 60 ? "Some red flags" : "Needs review"}
-            />
-            <MetricCard
-              label="Flagged Days"
-              value={String(stats.overtradingDays.length)}
-              positive={stats.overtradingDays.length === 0}
-              neutral={stats.overtradingDays.length === 0}
-              icon={AlertTriangle}
-              sub={`Threshold: >${Math.round(stats.meanDailyTrades + 1.5 * stdDev(Object.values({} as any)))} trades/day`}
-            />
-            <MetricCard
-              label="Max Single Day"
-              value={String(stats.maxDayTrades)}
-              positive={stats.maxDayTrades <= Math.round(stats.meanDailyTrades * 2)}
-              icon={BarChart2}
-              sub={`Avg: ${stats.meanDailyTrades.toFixed(1)} trades/day`}
-            />
-            <MetricCard
-              label="Revenge Sequences"
-              value={String(stats.revengeCount)}
-              positive={stats.revengeCount === 0}
-              neutral={stats.revengeCount === 0}
-              icon={Activity}
-              sub="Trades after a loss, same day"
-            />
+            <MetricCard label="Discipline Score" value={`${stats.disciplineScore}/100`} positive={stats.disciplineScore >= 70} neutral={stats.disciplineScore === 100} icon={Brain}
+              sub={stats.disciplineScore >= 80 ? "Consistent" : stats.disciplineScore >= 60 ? "Some red flags" : "Needs review"} />
+            <MetricCard label="Flagged Days"    value={String(stats.overtradingDays.length)} positive={stats.overtradingDays.length === 0} neutral={stats.overtradingDays.length === 0} icon={AlertTriangle}
+              sub={`Threshold: >${Math.round(stats.meanDailyTrades + 1.5 * stats.sdDailyTrades)} trades/day`} />
+            <MetricCard label="Max Single Day"  value={String(stats.maxDayTrades)} positive={stats.maxDayTrades <= Math.round(stats.meanDailyTrades * 2)} icon={BarChart2}
+              sub={`Avg: ${stats.meanDailyTrades.toFixed(1)} trades/day`} />
+            <MetricCard label="Revenge Sequences" value={String(stats.revengeCount)} positive={stats.revengeCount === 0} neutral={stats.revengeCount === 0} icon={Activity}
+              sub="Trades after a loss, same day" />
           </div>
 
           {stats.overtradingDays.length > 0 ? (
@@ -913,10 +1047,7 @@ export default function AnalyticsPage() {
                         {Math.round(((count - stats.meanDailyTrades) / stats.meanDailyTrades) * 100)}% above your average
                       </div>
                     </div>
-                    <div style={{
-                      fontSize: "20px", fontWeight: "800", color: "#ff4d6a",
-                      background: "rgba(255,77,106,0.1)", padding: "4px 12px", borderRadius: "8px",
-                    }}>
+                    <div style={{ fontSize: "20px", fontWeight: "800", color: "#ff4d6a", background: "rgba(255,77,106,0.1)", padding: "4px 12px", borderRadius: "8px" }}>
                       {count} trades
                     </div>
                   </div>
@@ -926,7 +1057,6 @@ export default function AnalyticsPage() {
                 <p style={{ fontSize: "12px", color: "var(--text-muted)", lineHeight: 1.6, margin: 0 }}>
                   Overtrading sessions are flagged when your daily count exceeds your mean by 1.5 standard deviations.
                   High-frequency days often produce lower per-trade quality due to fatigue, revenge trading, or deviating from your setup criteria.
-                  Review the journal entries for flagged days to identify behavioral patterns.
                 </p>
               </div>
             </SectionCard>
@@ -949,16 +1079,14 @@ export default function AnalyticsPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-            {/* Inputs */}
             <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px" }}>
               <h4 style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "16px" }}>Inputs</h4>
-
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {[
-                  { label: "Win Rate",      value: `${stats.winRate.toFixed(1)}%`,           note: "from your trade history" },
-                  { label: "Avg Win",       value: `$${stats.avgWin.toFixed(2)}`,             note: "from your trade history" },
-                  { label: "Avg Loss",      value: `$${stats.avgLoss.toFixed(2)}`,            note: "from your trade history" },
-                  { label: "Payoff Ratio",  value: `${(stats.avgWin / Math.max(stats.avgLoss, 0.01)).toFixed(2)}:1`, note: "avg win / avg loss" },
+                  { label: "Win Rate",     value: `${stats.winRate.toFixed(1)}%`,                                            note: "from your trade history" },
+                  { label: "Avg Win",      value: `$${stats.avgWin.toFixed(2)}`,                                             note: "from your trade history" },
+                  { label: "Avg Loss",     value: `$${stats.avgLoss.toFixed(2)}`,                                            note: "from your trade history" },
+                  { label: "Payoff Ratio", value: `${(stats.avgWin / Math.max(stats.avgLoss, 0.01)).toFixed(2)}:1`,          note: "avg win / avg loss" },
                 ].map(({ label, value, note }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "var(--bg-secondary)", borderRadius: "8px" }}>
                     <div>
@@ -968,8 +1096,6 @@ export default function AnalyticsPage() {
                     <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--accent-green)" }}>{value}</div>
                   </div>
                 ))}
-
-                {/* Risk % — user input */}
                 <div style={{ padding: "14px", background: "var(--bg-secondary)", borderRadius: "8px", border: "1px solid var(--accent-green)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                     <div>
@@ -985,24 +1111,18 @@ export default function AnalyticsPage() {
                     style={{ width: "100%", accentColor: "var(--accent-green)", cursor: "pointer" }}
                   />
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
-                    <span>0.5%</span>
-                    <span>25%</span>
+                    <span>0.5%</span><span>25%</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Results */}
             <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px" }}>
               <h4 style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "16px" }}>Results</h4>
-
               {rorData && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {/* RoR gauge */}
                   <div style={{ padding: "20px", background: "var(--bg-secondary)", borderRadius: "12px", textAlign: "center", border: `1px solid ${rorColor}30` }}>
-                    <div style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: "8px" }}>
-                      RISK OF RUIN
-                    </div>
+                    <div style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: "8px" }}>RISK OF RUIN</div>
                     <div style={{ fontSize: "48px", fontWeight: "800", color: rorColor, lineHeight: 1 }}>
                       {rorData.ror < 0.01 ? "<0.01" : rorData.ror.toFixed(2)}%
                     </div>
@@ -1010,35 +1130,18 @@ export default function AnalyticsPage() {
                       {rorData.ror < 1 ? "Low risk" : rorData.ror < 5 ? "Acceptable" : rorData.ror < 20 ? "Elevated — consider reducing size" : "High — reduce position size"}
                     </div>
                     <div style={{ marginTop: "12px", background: "var(--bg-card)", borderRadius: "6px", height: "8px", overflow: "hidden" }}>
-                      <div style={{
-                        width: `${Math.min(100, rorData.ror)}%`, height: "100%",
-                        background: `linear-gradient(90deg, #00e57a, ${rorColor})`,
-                        borderRadius: "6px", transition: "width 0.3s ease",
-                      }} />
+                      <div style={{ width: `${Math.min(100, rorData.ror)}%`, height: "100%", background: `linear-gradient(90deg, #00e57a, ${rorColor})`, borderRadius: "6px", transition: "width 0.3s ease" }} />
                     </div>
                   </div>
-
                   {[
-                    {
-                      label: "Kelly Criterion",
-                      value: `${rorData.kelly.toFixed(1)}%`,
-                      sub: "Theoretically optimal risk fraction",
-                      color: rorData.kelly > 0 ? "#4d9fff" : "#ff4d6a",
-                    },
-                    {
-                      label: "Recommended Max Risk",
-                      value: `${rorData.maxSafeRisk.toFixed(1)}%`,
-                      sub: "Half-Kelly — balances growth and safety",
-                      color: "var(--accent-green)",
-                    },
+                    { label: "Kelly Criterion",      value: `${rorData.kelly.toFixed(1)}%`,  sub: "Theoretically optimal risk fraction",    color: rorData.kelly > 0 ? "#4d9fff" : "#ff4d6a" },
+                    { label: "Recommended Max Risk", value: `${rorData.maxSafeRisk.toFixed(1)}%`, sub: "Half-Kelly — balances growth and safety", color: "var(--accent-green)" },
                     {
                       label: "Current vs Kelly",
                       value: riskPct > rorData.kelly && rorData.kelly > 0
                         ? `${((riskPct / rorData.kelly - 1) * 100).toFixed(0)}% above Kelly`
                         : rorData.kelly > 0 ? `${((1 - riskPct / rorData.kelly) * 100).toFixed(0)}% below Kelly` : "—",
-                      sub: riskPct > rorData.kelly && rorData.kelly > 0
-                        ? "Over-leveraged relative to your edge"
-                        : "Within safe range",
+                      sub: riskPct > rorData.kelly && rorData.kelly > 0 ? "Over-leveraged relative to your edge" : "Within safe range",
                       color: riskPct > rorData.kelly && rorData.kelly > 0 ? "#ff4d6a" : "#00e57a",
                     },
                   ].map(({ label, value, sub, color }) => (
@@ -1060,7 +1163,6 @@ export default function AnalyticsPage() {
               <strong style={{ color: "var(--text-primary)" }}>How this is calculated:</strong> Risk of ruin uses the normalized edge from your win rate and payoff ratio to estimate the probability of drawdown to zero.
               Kelly Criterion gives the theoretically optimal fraction of capital to risk per trade given your edge.
               Half-Kelly is recommended in practice — it provides ~75% of Kelly growth rate with significantly lower variance and ruin risk.
-              These figures assume consistent position sizing and stable edge over time.
             </p>
           </div>
         </>
