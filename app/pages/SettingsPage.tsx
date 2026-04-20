@@ -7,6 +7,7 @@ import {
   ExternalLink, Check, AlertTriangle, FileDown,
   Download, RefreshCw, Terminal, Loader, X,
   CheckCircle2, Circle, AlertCircle, MinusCircle,
+  Shield
 } from "lucide-react";
 
 const CURRENT_VERSION = "4.0.0";
@@ -621,6 +622,54 @@ export default function SettingsPage() {
                 Reset to defaults
               </button>
             </div>
+          </Section>
+          <Section title="Daily Risk Controls" icon={Shield}>
+            <Row
+              label="Daily Loss Limit"
+              description="Dashboard shows a warning at 75% and locks the indicator at 100%. Set to 0 to disable."
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={50}
+                  value={settings.dailyLossLimit}
+                  onChange={(e) => updateSettings({ dailyLossLimit: Number(e.target.value) })}
+                  style={{ ...inputStyle, width: "100px", textAlign: "center" }}
+                />
+              </div>
+            </Row>
+            <Row
+              label="Max Daily Trades"
+              description="Soft ceiling on trades per day. Dashboard turns red when reached. Set to 0 to disable."
+            >
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={settings.maxDailyTrades}
+                onChange={(e) => updateSettings({ maxDailyTrades: Number(e.target.value) })}
+                style={{ ...inputStyle, width: "80px", textAlign: "center" }}
+              />
+            </Row>
+            <Row
+              label="Default Risk %"
+              description="Pre-fills the risk percentage in the position sizing calculator."
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <input
+                  type="number"
+                  min={0.1}
+                  max={100}
+                  step={0.1}
+                  value={settings.defaultRiskPct}
+                  onChange={(e) => updateSettings({ defaultRiskPct: Number(e.target.value) })}
+                  style={{ ...inputStyle, width: "80px", textAlign: "center" }}
+                />
+                <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>%</span>
+              </div>
+            </Row>
           </Section>
         </div>
 

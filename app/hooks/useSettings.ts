@@ -7,6 +7,9 @@ export interface Settings {
   defaultCommission: number;
   defaultFees: number;
   currencyFormat: "USD" | "EUR" | "GBP" | "CAD" | "AUD";
+  dailyLossLimit: number;
+  maxDailyTrades: number;
+  defaultRiskPct: number;
 }
 
 const DEFAULTS: Settings = {
@@ -16,15 +19,18 @@ const DEFAULTS: Settings = {
   defaultCommission: 0,
   defaultFees: 0,
   currencyFormat: "USD",
+  dailyLossLimit: 0,
+  maxDailyTrades: 0,
+  defaultRiskPct: 1,
 };
 
 const STORAGE_KEY = "journedge_settings";
 
 const COLOR_MAP: Record<string, { dim: string }> = {
-  "#00e57a": { dim: "rgba(0,229,122,0.12)" },
-  "#4d9fff": { dim: "rgba(77,159,255,0.12)" },
+  "#00e57a": { dim: "rgba(0,229,122,0.12)"   },
+  "#4d9fff": { dim: "rgba(77,159,255,0.12)"  },
   "#a78bfa": { dim: "rgba(167,139,250,0.12)" },
-  "#fb923c": { dim: "rgba(251,146,60,0.12)" },
+  "#fb923c": { dim: "rgba(251,146,60,0.12)"  },
   "#f472b6": { dim: "rgba(244,114,182,0.12)" },
 };
 
