@@ -16,6 +16,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ExportPage from "./pages/ExportPage";
 import PlansPage from "./pages/PlansPage";
 import PlaybookPage from "./pages/PlaybookPage";
+import PositionSizerPage from "./pages/PositionSizerPage";
 
 function AppShell() {
   const { activePage, selectedTrade, setSelectedTrade, setTrades, trades } = useApp();
@@ -35,17 +36,18 @@ function AppShell() {
         display: isEditorPage ? "flex" : "block",
         flexDirection: isEditorPage ? "column" : undefined,
       }}>
-        {activePage === "dashboard"      && <Dashboard onAddTrade={() => setShowAddTrade(true)} />}
-        {activePage === "journal"        && <JournalPage />}
-        {activePage === "journal-editor" && <JournalEditorPage />}
-        {activePage === "analytics"      && <AnalyticsPage />}
-        {activePage === "calendar"       && <CalendarPage />}
-        {activePage === "plans"          && <PlansPage />}
-        {activePage === "playbook"       && <PlaybookPage />}
-        {activePage === "import"         && <ImportPage />}
-        {activePage === "accounts"       && <AccountsPage />}
-        {activePage === "export"         && <ExportPage />}
-        {activePage === "settings"       && <SettingsPage />}
+        {activePage === "dashboard"       && <Dashboard onAddTrade={() => setShowAddTrade(true)} />}
+        {activePage === "journal"         && <JournalPage />}
+        {activePage === "journal-editor"  && <JournalEditorPage />}
+        {activePage === "analytics"       && <AnalyticsPage />}
+        {activePage === "calendar"        && <CalendarPage />}
+        {activePage === "plans"           && <PlansPage />}
+        {activePage === "playbook"        && <PlaybookPage />}
+        {activePage === "position-sizer"  && <PositionSizerPage />}
+        {activePage === "import"          && <ImportPage />}
+        {activePage === "accounts"        && <AccountsPage />}
+        {activePage === "export"          && <ExportPage />}
+        {activePage === "settings"        && <SettingsPage />}
 
         {!isEditorPage && (
           <div style={{
@@ -80,4 +82,3 @@ export default function Home() {
     </AppProvider>
   );
 }
-

@@ -2,7 +2,7 @@
 import {
   LayoutDashboard, BookOpen, BarChart2, Calendar,
   Upload, PlusCircle, Settings, Wallet, ChevronDown,
-  FileDown, ClipboardList, Library,
+  FileDown, ClipboardList, Library, SlidersHorizontal,
 } from "lucide-react";
 import Image from "next/image";
 import { useApp } from "../context/AppContext";
@@ -10,15 +10,16 @@ import { PageId, Account } from "../lib/types";
 import { useState } from "react";
 
 const NAV_ITEMS: { icon: any; label: string; id: PageId }[] = [
-  { icon: LayoutDashboard, label: "Dashboard",   id: "dashboard" },
-  { icon: BookOpen,        label: "Journal",      id: "journal"   },
-  { icon: BarChart2,       label: "Analytics",    id: "analytics" },
-  { icon: Calendar,        label: "Calendar",     id: "calendar"  },
-  { icon: ClipboardList,   label: "Trade Plans",  id: "plans"     },
-  { icon: Library,         label: "Playbook",     id: "playbook"  },
-  { icon: Wallet,          label: "Accounts",     id: "accounts"  },
-  { icon: Upload,          label: "Import Trades",id: "import"    },
-  { icon: FileDown,        label: "Export",       id: "export"    },
+  { icon: LayoutDashboard,   label: "Dashboard",    id: "dashboard"      },
+  { icon: BookOpen,          label: "Journal",       id: "journal"        },
+  { icon: BarChart2,         label: "Analytics",     id: "analytics"      },
+  { icon: Calendar,          label: "Calendar",      id: "calendar"       },
+  { icon: ClipboardList,     label: "Trade Plans",   id: "plans"          },
+  { icon: Library,           label: "Playbook",      id: "playbook"       },
+  { icon: SlidersHorizontal, label: "Position Sizer",id: "position-sizer" },
+  { icon: Wallet,            label: "Accounts",      id: "accounts"       },
+  { icon: Upload,            label: "Import Trades", id: "import"         },
+  { icon: FileDown,          label: "Export",        id: "export"         },
 ];
 
 interface SidebarProps {
