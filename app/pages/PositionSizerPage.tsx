@@ -314,7 +314,7 @@ export default function PositionSizerPage() {
               ))}
             </div>
             <input
-              type="range" min={0.1} max={10} step={0.1}
+              type="range" min={0.1} max={100} step={0.1}
               value={riskPct || 1}
               onChange={(e) => setRiskPct(e.target.value)}
               style={{ width: "100%", accentColor: "var(--accent-green)", cursor: "pointer" }}
@@ -574,7 +574,6 @@ export default function PositionSizerPage() {
                 <Info size={14} color="var(--text-muted)" style={{ marginTop: "1px", flexShrink: 0 }} />
                 <p style={{ fontSize: "11px", color: "var(--text-muted)", lineHeight: "1.7", margin: 0 }}>
                   Position size is calculated as: <strong style={{ color: "var(--text-secondary)" }}>floor(Dollar Risk ÷ (Stop Distance × Multiplier))</strong>.
-                  Using <strong style={{ color: "var(--text-secondary)" }}>floor()</strong> ensures you never exceed your risk budget.
                   Actual dollar risk shown reflects the floored unit count — it may be slightly less than your target.
                 </p>
               </div>
