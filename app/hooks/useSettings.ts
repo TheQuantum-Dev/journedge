@@ -43,6 +43,14 @@ function applyAccentColor(value: string) {
   root.style.setProperty("--accent-green-dim", color.dim);
 }
 
+function applyTheme(theme: "dark" | "light") {
+  if (theme === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+}
+
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
 
@@ -53,6 +61,7 @@ export function useSettings() {
         const parsed: Settings = { ...DEFAULTS, ...JSON.parse(stored) };
         setSettings(parsed);
         if (parsed.accentColor) applyAccentColor(parsed.accentColor);
+        if (parsed.theme) applyTheme(parsed.theme);
       }
     } catch {}
   }, []);
@@ -62,12 +71,14 @@ export function useSettings() {
     setSettings(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     if (partial.accentColor) applyAccentColor(partial.accentColor);
+    if (partial.theme !== undefined) applyTheme(partial.theme);
   };
 
   const resetSettings = () => {
     setSettings(DEFAULTS);
     localStorage.removeItem(STORAGE_KEY);
     applyAccentColor(DEFAULTS.accentColor);
+    applyTheme(DEFAULTS.theme);
   };
 
   return { settings, updateSettings, resetSettings };

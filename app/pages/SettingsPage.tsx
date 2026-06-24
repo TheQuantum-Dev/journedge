@@ -7,17 +7,17 @@ import {
   ExternalLink, Check, AlertTriangle, FileDown,
   Download, RefreshCw, Terminal, Loader, X,
   CheckCircle2, Circle, AlertCircle, MinusCircle,
-  Shield
+  Sun, Moon, Shield,
 } from "lucide-react";
 
 const CURRENT_VERSION = "4.0.0";
 const GITHUB_REPO = "TheQuantum-Dev/journedge";
 
 const ACCENT_COLORS = [
-  { label: "Green",  value: "#00e57a", dim: "rgba(0,229,122,0.12)" },
-  { label: "Blue",   value: "#4d9fff", dim: "rgba(77,159,255,0.12)" },
+  { label: "Green",  value: "#00e57a", dim: "rgba(0,229,122,0.12)"   },
+  { label: "Blue",   value: "#4d9fff", dim: "rgba(77,159,255,0.12)"  },
   { label: "Purple", value: "#a78bfa", dim: "rgba(167,139,250,0.12)" },
-  { label: "Orange", value: "#fb923c", dim: "rgba(251,146,60,0.12)" },
+  { label: "Orange", value: "#fb923c", dim: "rgba(251,146,60,0.12)"  },
   { label: "Pink",   value: "#f472b6", dim: "rgba(244,114,182,0.12)" },
 ];
 
@@ -53,13 +53,13 @@ const STEP_DEFS = [
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: "8px",
   border: "1px solid var(--border)", background: "var(--bg-secondary)",
-  color: "#f0f0ff", fontSize: "13px", fontFamily: "'DM Sans', sans-serif",
-  boxSizing: "border-box", outline: "none",
+  color: "var(--text-primary)", fontSize: "13px", fontFamily: "'DM Sans', sans-serif",
+  boxSizing: "border-box" as const, outline: "none",
 };
 
 const linkStyle: React.CSSProperties = {
   display: "flex", alignItems: "center", gap: "6px",
-  color: "#8888aa", fontSize: "12px", textDecoration: "none",
+  color: "var(--text-muted)", fontSize: "12px", textDecoration: "none",
   fontFamily: "'DM Sans', sans-serif",
 };
 
@@ -78,12 +78,12 @@ function Section({ title, icon: Icon, children }: {
       }}>
         <div style={{
           width: "32px", height: "32px", borderRadius: "8px",
-          background: "var(--accent-dim)",
+          background: "var(--accent-green-dim)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <Icon size={15} color="var(--accent-green)" />
         </div>
-        <h3 style={{ fontSize: "14px", fontWeight: "700", color: "#f0f0ff" }}>
+        <h3 style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
           {title}
         </h3>
       </div>
@@ -101,9 +101,9 @@ function Row({ label, description, children }: {
       alignItems: "center", marginBottom: "16px",
     }}>
       <div style={{ flex: 1, marginRight: "24px" }}>
-        <div style={{ fontSize: "13px", fontWeight: "600", color: "#f0f0ff" }}>{label}</div>
+        <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{label}</div>
         {description && (
-          <div style={{ fontSize: "11px", color: "#8888aa", marginTop: "2px" }}>{description}</div>
+          <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>{description}</div>
         )}
       </div>
       <div style={{ flexShrink: 0 }}>{children}</div>
@@ -124,21 +124,22 @@ export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings();
   const { trades, accounts, setActivePage } = useApp();
 
-  const [latestVersion, setLatestVersion]     = useState<string | null>(null);
-  const [checkingUpdate, setCheckingUpdate]   = useState(false);
-  const [updateError, setUpdateError]         = useState(false);
+  const [latestVersion, setLatestVersion]   = useState<string | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateError, setUpdateError]       = useState(false);
 
-  const [updatePhase, setUpdatePhase]         = useState<UpdatePhase>("idle");
-  const [steps, setSteps]                     = useState<UpdateStep[]>(
+  const [updatePhase, setUpdatePhase]       = useState<UpdatePhase>("idle");
+  const [steps, setSteps]                   = useState<UpdateStep[]>(
     STEP_DEFS.map((s) => ({ ...s, status: "pending" as StepStatus, message: "" }))
   );
-  const [errorDetail, setErrorDetail]         = useState("");
-  const [restartLoading, setRestartLoading]   = useState(false);
+  const [errorDetail, setErrorDetail]       = useState("");
+  const [restartLoading, setRestartLoading] = useState(false);
   const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
 
-  const [exportDone, setExportDone]           = useState(false);
-  const [clearConfirm, setClearConfirm]       = useState(false);
-  const [cleared, setCleared]                 = useState(false);
+  const [exportDone, setExportDone]         = useState(false);
+  const [jsonExportDone, setJsonExportDone] = useState(false);
+  const [clearConfirm, setClearConfirm]     = useState(false);
+  const [cleared, setCleared]               = useState(false);
 
   useEffect(() => {
     if (settings.accentColor) applyAccentColor(settings.accentColor);
@@ -176,10 +177,7 @@ export default function SettingsPage() {
 
     source.onmessage = (e: MessageEvent) => {
       const event = JSON.parse(e.data) as {
-        step: string;
-        status: StepStatus;
-        message: string;
-        detail?: string;
+        step: string; status: StepStatus; message: string; detail?: string;
       };
 
       if (event.step === "complete") {
@@ -202,9 +200,7 @@ export default function SettingsPage() {
 
       setSteps((prev) =>
         prev.map((s) =>
-          s.id === event.step
-            ? { ...s, status: event.status, message: event.message }
-            : s
+          s.id === event.step ? { ...s, status: event.status, message: event.message } : s
         )
       );
     };
@@ -238,6 +234,7 @@ export default function SettingsPage() {
   const updateAvailable = latestVersion && latestVersion !== CURRENT_VERSION;
   const isUpdateRunning = updatePhase === "running";
 
+  // CSV export
   const handleExport = () => {
     if (trades.length === 0) return;
     const headers = [
@@ -270,6 +267,20 @@ export default function SettingsPage() {
     setTimeout(() => setExportDone(false), 3000);
   };
 
+  // JSON export
+  const handleJsonExport = () => {
+    if (trades.length === 0) return;
+    const blob = new Blob([JSON.stringify(trades, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `journedge-export-${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setJsonExportDone(true);
+    setTimeout(() => setJsonExportDone(false), 3000);
+  };
+
   const handleClearTrades = async () => {
     if (!clearConfirm) { setClearConfirm(true); return; }
     try {
@@ -297,14 +308,15 @@ export default function SettingsPage() {
       `}</style>
 
       <div style={{ marginBottom: "32px" }}>
-        <h2 style={{ fontSize: "26px", fontWeight: "700", color: "#f0f0ff", letterSpacing: "-0.5px" }}>
+        <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
           Settings
         </h2>
-        <p style={{ color: "#8888aa", fontSize: "14px", marginTop: "4px" }}>
+        <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
           Preferences are saved locally to your device
         </p>
       </div>
 
+      {/* Update available banner */}
       {updateAvailable && updatePhase === "idle" && (
         <div style={{
           background: "var(--accent-green-dim)", border: "1px solid var(--accent-green)",
@@ -320,10 +332,10 @@ export default function SettingsPage() {
                 <Download size={16} color="var(--accent-green)" />
               </div>
               <div>
-                <div style={{ fontSize: "14px", fontWeight: "700", color: "#f0f0ff", marginBottom: "2px" }}>
+                <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "2px" }}>
                   Journedge v{latestVersion} is available
                 </div>
-                <div style={{ fontSize: "12px", color: "#8888aa" }}>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                   You are on v{CURRENT_VERSION} · Updates your code, dependencies, and database automatically
                 </div>
               </div>
@@ -361,6 +373,7 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* Update progress panel */}
       {updatePhase !== "idle" && (
         <div style={{
           background: "var(--bg-card)", borderRadius: "14px", marginBottom: "20px",
@@ -372,8 +385,7 @@ export default function SettingsPage() {
           overflow: "hidden",
         }}>
           <div style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid var(--border)",
+            padding: "16px 20px", borderBottom: "1px solid var(--border)",
             display: "flex", alignItems: "center", justifyContent: "space-between",
             background: updatePhase === "error"
               ? "rgba(255,77,106,0.05)"
@@ -391,15 +403,15 @@ export default function SettingsPage() {
                 fontSize: "14px", fontWeight: "700",
                 color: updatePhase === "error" ? "#ff4d6a" : updatePhase === "restart_required" ? "#00e57a" : "#4d9fff",
               }}>
-                {updatePhase === "running" && `Installing Journedge v${latestVersion}...`}
+                {updatePhase === "running"          && `Installing Journedge v${latestVersion}...`}
                 {updatePhase === "restart_required" && `Journedge v${latestVersion} installed`}
-                {updatePhase === "error" && "Update failed"}
+                {updatePhase === "error"            && "Update failed"}
               </span>
             </div>
             {(updatePhase === "error" || updatePhase === "restart_required") && (
               <button
                 onClick={resetUpdateState}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#8888aa", padding: "2px" }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: "2px" }}
               >
                 <X size={15} />
               </button>
@@ -427,12 +439,12 @@ export default function SettingsPage() {
                     color: step.status === "complete" ? "#00e57a"
                       : step.status === "error"    ? "#ff4d6a"
                       : step.status === "running"  ? "#4d9fff"
-                      : "#f0f0ff",
+                      : "var(--text-primary)",
                   }}>
                     {step.label}
                   </div>
                   {step.message && (
-                    <div style={{ fontSize: "11px", color: "#8888aa", marginTop: "2px" }}>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
                       {step.message}
                     </div>
                   )}
@@ -472,7 +484,7 @@ export default function SettingsPage() {
                 background: "rgba(0,229,122,0.06)", border: "1px solid rgba(0,229,122,0.2)",
                 borderRadius: "10px", padding: "16px",
               }}>
-                <div style={{ fontSize: "12px", color: "#8888aa", marginBottom: "12px" }}>
+                <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "12px" }}>
                   All files updated. Restart the server to apply changes.
                 </div>
                 <div style={{
@@ -482,14 +494,12 @@ export default function SettingsPage() {
                   display: "flex", alignItems: "center", gap: "10px",
                 }}>
                   <Terminal size={12} color="#8888aa" style={{ flexShrink: 0 }} />
-                  <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#00e57a" }}>
-                    npm run dev
-                  </span>
+                  <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#00e57a" }}>npm run dev</span>
                   <button
                     onClick={() => navigator.clipboard.writeText("npm run dev")}
                     style={{
                       marginLeft: "auto", background: "none", border: "none",
-                      cursor: "pointer", color: "#8888aa", fontSize: "10px",
+                      cursor: "pointer", color: "var(--text-muted)", fontSize: "10px",
                       fontFamily: "'DM Sans', sans-serif", flexShrink: 0,
                     }}
                   >
@@ -538,6 +548,7 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* Up to date banner */}
       {isUpToDate && updatePhase === "idle" && (
         <div style={{
           background: "var(--accent-green-dim)", border: "1px solid var(--accent-green)",
@@ -555,14 +566,16 @@ export default function SettingsPage() {
         <div style={{
           background: "rgba(136,136,170,0.08)", border: "1px solid var(--border)",
           borderRadius: "12px", padding: "12px 18px", marginBottom: "20px",
-          fontSize: "12px", color: "#8888aa",
+          fontSize: "12px", color: "var(--text-muted)",
         }}>
           Could not check for updates. Make sure you are connected to the internet.
         </div>
       )}
 
+      {/* Two-column grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "start" }}>
         <div>
+          {/* Appearance */}
           <Section title="Appearance" icon={Palette}>
             <Row label="Accent Color" description="Applied across the entire interface">
               <div style={{ display: "flex", gap: "8px" }}>
@@ -583,8 +596,31 @@ export default function SettingsPage() {
                 ))}
               </div>
             </Row>
+            <Row label="Theme" description="Switch between dark and light interface">
+              <div style={{ display: "flex", gap: "6px" }}>
+                {(["dark", "light"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => updateSettings({ theme: t })}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "6px",
+                      padding: "7px 14px", borderRadius: "8px",
+                      border: `1px solid ${settings.theme === t ? "var(--accent-green)" : "var(--border)"}`,
+                      background: settings.theme === t ? "var(--accent-green-dim)" : "transparent",
+                      color: settings.theme === t ? "var(--accent-green)" : "var(--text-muted)",
+                      fontSize: "12px", fontWeight: "600", cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif", textTransform: "capitalize",
+                    }}
+                  >
+                    {t === "dark" ? <Moon size={12} /> : <Sun size={12} />}
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </Row>
           </Section>
 
+          {/* Trading Preferences */}
           <Section title="Trading Preferences" icon={Sliders}>
             <Row label="Default Options Multiplier" description="Applied to P&L calculation for options">
               <input
@@ -615,7 +651,7 @@ export default function SettingsPage() {
                 onClick={resetSettings}
                 style={{
                   background: "none", border: "none", cursor: "pointer",
-                  color: "#8888aa", fontSize: "12px",
+                  color: "var(--text-muted)", fontSize: "12px",
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
@@ -623,17 +659,17 @@ export default function SettingsPage() {
               </button>
             </div>
           </Section>
+
+          {/* Daily Risk Controls */}
           <Section title="Daily Risk Controls" icon={Shield}>
             <Row
               label="Daily Loss Limit"
-              description="Dashboard shows a warning at 75% and locks the indicator at 100%. Set to 0 to disable."
+              description="Dashboard shows a warning at 75% and turns red at 100%. Set to 0 to disable."
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>$</span>
                 <input
-                  type="number"
-                  min={0}
-                  step={50}
+                  type="number" min={0} step={50}
                   value={settings.dailyLossLimit}
                   onChange={(e) => updateSettings({ dailyLossLimit: Number(e.target.value) })}
                   style={{ ...inputStyle, width: "100px", textAlign: "center" }}
@@ -645,9 +681,7 @@ export default function SettingsPage() {
               description="Soft ceiling on trades per day. Dashboard turns red when reached. Set to 0 to disable."
             >
               <input
-                type="number"
-                min={0}
-                step={1}
+                type="number" min={0} step={1}
                 value={settings.maxDailyTrades}
                 onChange={(e) => updateSettings({ maxDailyTrades: Number(e.target.value) })}
                 style={{ ...inputStyle, width: "80px", textAlign: "center" }}
@@ -659,10 +693,7 @@ export default function SettingsPage() {
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <input
-                  type="number"
-                  min={0.1}
-                  max={100}
-                  step={0.1}
+                  type="number" min={0.1} max={100} step={0.1}
                   value={settings.defaultRiskPct}
                   onChange={(e) => updateSettings({ defaultRiskPct: Number(e.target.value) })}
                   style={{ ...inputStyle, width: "80px", textAlign: "center" }}
@@ -674,9 +705,10 @@ export default function SettingsPage() {
         </div>
 
         <div>
+          {/* Data Management */}
           <Section title="Data Management" icon={Database}>
             <Row
-              label="Export Trades"
+              label="Export Trades (CSV)"
               description={`${trades.length} trade${trades.length !== 1 ? "s" : ""} across ${accounts.length} account${accounts.length !== 1 ? "s" : ""}`}
             >
               <button
@@ -686,15 +718,37 @@ export default function SettingsPage() {
                   padding: "8px 16px", borderRadius: "8px",
                   border: "1px solid var(--border)",
                   background: exportDone ? "rgba(0,229,122,0.1)" : "transparent",
-                  color: exportDone ? "#00e57a" : "#f0f0ff",
+                  color: exportDone ? "#00e57a" : "var(--text-primary)",
                   fontSize: "12px", fontWeight: "600", cursor: "pointer",
                   fontFamily: "'DM Sans', sans-serif",
                   display: "flex", alignItems: "center", gap: "6px",
                   opacity: trades.length === 0 ? 0.5 : 1,
                 }}
               >
-                {exportDone ? <Check size={13} /> : null}
+                {exportDone && <Check size={13} />}
                 {exportDone ? "Exported" : "Export CSV"}
+              </button>
+            </Row>
+            <Row
+              label="Export Trades (JSON)"
+              description="Full data export including all fields and journal entries"
+            >
+              <button
+                onClick={handleJsonExport}
+                disabled={trades.length === 0}
+                style={{
+                  padding: "8px 16px", borderRadius: "8px",
+                  border: "1px solid var(--border)",
+                  background: jsonExportDone ? "rgba(0,229,122,0.1)" : "transparent",
+                  color: jsonExportDone ? "#00e57a" : "var(--text-primary)",
+                  fontSize: "12px", fontWeight: "600", cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  display: "flex", alignItems: "center", gap: "6px",
+                  opacity: trades.length === 0 ? 0.5 : 1,
+                }}
+              >
+                {jsonExportDone && <Check size={13} />}
+                {jsonExportDone ? "Exported" : "Export JSON"}
               </button>
             </Row>
             <Row
@@ -706,7 +760,7 @@ export default function SettingsPage() {
                 style={{
                   padding: "8px 16px", borderRadius: "8px",
                   border: "1px solid var(--border)", background: "transparent",
-                  color: "#f0f0ff", fontSize: "12px", fontWeight: "600",
+                  color: "var(--text-primary)", fontSize: "12px", fontWeight: "600",
                   cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
                   display: "flex", alignItems: "center", gap: "6px",
                 }}
@@ -725,7 +779,7 @@ export default function SettingsPage() {
                   padding: "8px 16px", borderRadius: "8px",
                   border: `1px solid ${clearConfirm ? "#ff4d6a" : "var(--border)"}`,
                   background: clearConfirm ? "rgba(255,77,106,0.1)" : "transparent",
-                  color: clearConfirm ? "#ff4d6a" : "#8888aa",
+                  color: clearConfirm ? "#ff4d6a" : "var(--text-muted)",
                   fontSize: "12px", fontWeight: "600", cursor: "pointer",
                   fontFamily: "'DM Sans', sans-serif",
                 }}
@@ -735,12 +789,13 @@ export default function SettingsPage() {
             </Row>
           </Section>
 
+          {/* About */}
           <Section title="About" icon={Info}>
             <Row label="Version" description="Current installed version">
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <span style={{
                   fontSize: "12px", fontWeight: "700", color: "var(--accent-green)",
-                  background: "var(--accent-dim)", padding: "3px 10px",
+                  background: "var(--accent-green-dim)", padding: "3px 10px",
                   borderRadius: "20px",
                 }}>
                   v{CURRENT_VERSION}
@@ -762,13 +817,13 @@ export default function SettingsPage() {
                     className={checkingUpdate ? "dot-blink" : ""}
                     style={{
                       width: "7px", height: "7px", borderRadius: "50%",
-                      background: checkingUpdate ? "#8888aa" : "var(--accent-green)",
+                      background: checkingUpdate ? "var(--text-muted)" : "var(--accent-green)",
                       boxShadow: checkingUpdate ? "none" : "0 0 6px var(--accent-green)",
                       flexShrink: 0,
                       transition: "background 0.3s ease, box-shadow 0.3s ease",
                     }}
                   />
-                  <span style={{ fontSize: "11px", color: "#8888aa", fontFamily: "'DM Sans', sans-serif" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "'DM Sans', sans-serif" }}>
                     {checkingUpdate ? "Checking..." : "Check for updates"}
                   </span>
                 </button>

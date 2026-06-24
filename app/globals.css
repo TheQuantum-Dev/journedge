@@ -20,6 +20,20 @@
   --accent-blue: #4d9fff;
 }
 
+[data-theme="light"] {
+  --bg-primary: #f0f0f8;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #e8e8f0;
+  --border: #d4d4e4;
+  --text-primary: #0a0a1a;
+  --text-secondary: #3a3a5c;
+  --text-muted: #7070a0;
+  --accent-red: #e8294a;
+  --accent-red-dim: rgba(232,41,74,0.1);
+  --accent-blue: #2979d4;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
