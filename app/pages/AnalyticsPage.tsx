@@ -807,7 +807,7 @@ export default function AnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                     <XAxis dataKey="trade" tick={axisStyle} axisLine={false} tickLine={false} label={{ value: "Trade #", position: "insideBottom", offset: -2, fill: "#8888aa", fontSize: 10 }} />
                     <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v: any, name: string) => [`$${v}`, name === "mfe" ? "MFE" : "MAE"]} />
+                    <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [`$${v}`, name === "mfe" ? "MFE" : "MAE"]} />
                     <Bar dataKey="mfe" fill="#00e57a" radius={[4, 4, 0, 0]} name="mfe" />
                     <Bar dataKey="mae" fill="#ff4d6a" radius={[4, 4, 0, 0]} name="mae" />
                   </BarChart>
