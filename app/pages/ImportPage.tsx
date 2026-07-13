@@ -4,17 +4,17 @@ import { useApp } from "../context/AppContext";
 import { Trade } from "../lib/types";
 import { parseFidelityCSV }                        from "../lib/parseFidelityCSV";
 import { parseJournedgeCSV, isJournedgeCSV }        from "../lib/parseJournedgeCSV";
+import { parseSchwabCSV, isSchwabCSV }              from "../lib/parseSchwabCSV";
 import { parseTDAmeritradeCSV, isTDAmeritradeCSV }  from "../lib/parseTDAmeritradeCSV";
 import { parseTastytradeCSV, isTastytradeCSV }      from "../lib/parseTastytradeCSV";
 import { parseIBKRCSV, isIBKRCSV }                 from "../lib/parseIBKRCSV";
-import { parseSchwabRealizedGainLossCSV, isSchwabRealizedGainLossCSV } from "../lib/parseSchwabRealizedGainLossCSV";
 import {
   Upload, CheckCircle, AlertCircle, FileText,
   ArrowRight, X, Database, RefreshCw,
 } from "lucide-react";
 
 type ParseStatus = "idle" | "success" | "error" | "importing";
-type BrokerSource = "Journedge" | "fidelity" | "schwabRealized" | "tdameritrade" | "tastytrade" | "ibkr";
+type BrokerSource = "Journedge" | "fidelity" | "schwab" | "tdameritrade" | "tastytrade" | "ibkr";
 
 interface ParseResult {
   trades: Trade[];
@@ -23,12 +23,12 @@ interface ParseResult {
 }
 
 const BADGE_CONFIG: Record<BrokerSource, { label: string; color: string; bg: string; border: string }> = {
-  Journedge:    { label: "Journedge Export",  color: "#00e57a", bg: "rgba(0,229,122,0.12)",   border: "rgba(0,229,122,0.3)"   },
-  fidelity:     { label: "Fidelity CSV",      color: "#4d9fff", bg: "rgba(77,159,255,0.12)",  border: "rgba(77,159,255,0.3)"  },
-  schwabRealized: { label: "Schwab Gain/Loss CSV", color: "#4d9fff", bg: "rgba(77,159,255,0.12)", border: "rgba(77,159,255,0.3)" },
-  tdameritrade: { label: "TD Ameritrade CSV", color: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)"  },
-  tastytrade:   { label: "Tastytrade CSV",    color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)" },
-  ibkr:         { label: "IBKR Activity CSV", color: "#f472b6", bg: "rgba(244,114,182,0.12)", border: "rgba(244,114,182,0.3)" },
+  Journedge:    { label: "Journedge Export",    color: "#00e57a", bg: "rgba(0,229,122,0.12)",   border: "rgba(0,229,122,0.3)"   },
+  fidelity:     { label: "Fidelity CSV",        color: "#4d9fff", bg: "rgba(77,159,255,0.12)",  border: "rgba(77,159,255,0.3)"  },
+  schwab:       { label: "Charles Schwab CSV",  color: "#4d9fff", bg: "rgba(77,159,255,0.12)",  border: "rgba(77,159,255,0.3)"  },
+  tdameritrade: { label: "TD Ameritrade CSV",   color: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)"  },
+  tastytrade:   { label: "Tastytrade CSV",      color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)" },
+  ibkr:         { label: "IBKR Activity CSV",   color: "#f472b6", bg: "rgba(244,114,182,0.12)", border: "rgba(244,114,182,0.3)" },
 };
 
 function FormatBadge({ source }: { source: BrokerSource }) {
@@ -47,10 +47,10 @@ function FormatBadge({ source }: { source: BrokerSource }) {
 
 function detectAndParse(text: string): { trades: Trade[]; source: BrokerSource } {
   if (isJournedgeCSV(text))    return { trades: parseJournedgeCSV(text),    source: "Journedge"     };
+  if (isSchwabCSV(text))       return { trades: parseSchwabCSV(text),       source: "schwab"        };
   if (isTastytradeCSV(text))   return { trades: parseTastytradeCSV(text),   source: "tastytrade"   };
   if (isTDAmeritradeCSV(text)) return { trades: parseTDAmeritradeCSV(text), source: "tdameritrade" };
   if (isIBKRCSV(text))         return { trades: parseIBKRCSV(text),         source: "ibkr"         };
-  if (isSchwabRealizedGainLossCSV(text)) return { trades: parseSchwabRealizedGainLossCSV(text), source: "schwabRealized" };
   return { trades: parseFidelityCSV(text), source: "fidelity" };
 }
 
@@ -63,6 +63,11 @@ const BROKER_CARDS = [
   {
     label: "Fidelity",
     desc:  "Upload your Fidelity trade history export. Trades are automatically parsed and P&L calculated.",
+    color: "#4d9fff", bg: "rgba(77,159,255,0.06)", border: "rgba(77,159,255,0.2)",
+  },
+  {
+    label: "Charles Schwab",
+    desc:  "Upload a Schwab Realized Gain/Loss Lot Details CSV. Export from the Gain/Loss tab in your Schwab account. Wash-sale adjustments are preserved.",
     color: "#4d9fff", bg: "rgba(77,159,255,0.06)", border: "rgba(77,159,255,0.2)",
   },
   {
@@ -79,7 +84,6 @@ const BROKER_CARDS = [
     label: "Interactive Brokers",
     desc:  "Upload an IBKR Activity Statement CSV. Export from Flex Query or the standard Activity Statement.",
     color: "#f472b6", bg: "rgba(244,114,182,0.06)", border: "rgba(244,114,182,0.2)",
-    fullWidth: true,
   },
 ];
 
@@ -117,7 +121,7 @@ export default function ImportPage() {
           setStatus("error");
           setMessage(
             "No trades found. Make sure this is a supported broker export or a Journedge CSV. " +
-            "Supported: Fidelity, TD Ameritrade, Tastytrade, Interactive Brokers, Journedge."
+            "Supported: Fidelity, Charles Schwab, TD Ameritrade, Tastytrade, Interactive Brokers, Journedge."
           );
           return;
         }
@@ -179,7 +183,6 @@ export default function ImportPage() {
             style={{
               background: card.bg, border: `1px solid ${card.border}`,
               borderRadius: "12px", padding: "16px",
-              gridColumn: card.fullWidth ? "1 / -1" : undefined,
             }}
           >
             <div style={{ fontSize: "12px", fontWeight: "700", color: card.color, marginBottom: "6px" }}>
