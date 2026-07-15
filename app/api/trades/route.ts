@@ -94,3 +94,14 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update trade" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { id } = await request.json();
+    await prisma.trade.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Failed to delete trade" }, { status: 500 });
+  }
+}

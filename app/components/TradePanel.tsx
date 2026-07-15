@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { X, Clock, TrendingUp, Link, Save, Image, Trash2, ExternalLink, Library, ChevronDown, Check } from "lucide-react";
+import { X, Clock, TrendingUp, Link, Save, Image, Trash2, ExternalLink, Library, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import { Trade } from "../lib/types";
 import { useApp } from "../context/AppContext";
 import TagSelector from "./TagSelector";
@@ -147,7 +147,7 @@ function PlaybookSelector({ trade }: { trade: Trade }) {
 }
 
 export default function TradePanel({ trade, onClose, onSave }: Props) {
-  const { setActivePage, setActiveTradeId } = useApp();
+  const { setActivePage, setActiveTradeId, deleteTrade } = useApp();
 
   const [entryTime, setEntryTime] = useState("");
   const [exitTime, setExitTime]   = useState("");
@@ -160,6 +160,7 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
   const [saved, setSaved]         = useState(false);
   const [images, setImages]       = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (trade) {
@@ -175,6 +176,7 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
           ? JSON.parse(trade.imageUrls || "[]")
           : trade.imageUrls || []
       );
+      setConfirmDelete(false);
     }
   }, [trade]);
 
@@ -230,6 +232,15 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
       setTimeout(() => setSaved(false), 2000);
     }
     setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    await deleteTrade(trade.id);
+    onClose();
   };
 
   const openFullJournal = () => {
@@ -513,8 +524,8 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
           </div>
         </div>
 
-        {/* Save */}
-        <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)" }}>
+        {/* Footer — Save and Delete */}
+        <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "10px" }}>
           <button
             onClick={handleSave}
             disabled={saving}
@@ -529,6 +540,35 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
           >
             <Save size={15} />
             {saving ? "Saving..." : saved ? "Saved" : "Save Changes"}
+          </button>
+
+          <button
+            onClick={handleDelete}
+            style={{
+              width: "100%", padding: "10px", borderRadius: "8px",
+              border: `1px solid ${confirmDelete ? "#ff4d6a" : "var(--border)"}`,
+              background: confirmDelete ? "rgba(255,77,106,0.1)" : "transparent",
+              color: confirmDelete ? "#ff4d6a" : "var(--text-muted)",
+              fontSize: "13px", fontWeight: confirmDelete ? "700" : "400",
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              if (!confirmDelete) {
+                e.currentTarget.style.borderColor = "#ff4d6a";
+                e.currentTarget.style.color = "#ff4d6a";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!confirmDelete) {
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.color = "var(--text-muted)";
+              }
+            }}
+          >
+            {confirmDelete ? <AlertTriangle size={14} /> : <Trash2 size={14} />}
+            {confirmDelete ? "Confirm delete — cannot be undone" : "Delete trade"}
           </button>
         </div>
       </div>

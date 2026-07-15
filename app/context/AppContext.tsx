@@ -17,6 +17,7 @@ interface AppContextType {
   setTrades: (trades: Trade[]) => void;
   reloadTrades: () => Promise<void>;
   updateTradeInMemory: (id: string, patch: Partial<Trade>) => void;
+  deleteTrade: (id: string) => Promise<void>;
   selectedTrade: Trade | null;
   setSelectedTrade: (trade: Trade | null) => void;
   loading: boolean;
@@ -80,6 +81,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateTradeInMemory = useCallback((id: string, patch: Partial<Trade>) => {
     setAllTrades((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  }, []);
+
+  const deleteTrade = useCallback(async (id: string) => {
+    await fetch("/api/trades", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setAllTrades((prev) => prev.filter((t) => t.id !== id));
+    setSelectedTrade((prev) => (prev?.id === id ? null : prev));
   }, []);
 
   const reloadTags = useCallback(async () => {
@@ -189,7 +200,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadAccounts();
   }, []);
 
-  const setTrades       = (newTrades: Trade[]) => setAllTrades(newTrades);
+  const setTrades        = (newTrades: Trade[]) => setAllTrades(newTrades);
   const setActiveAccount = (account: Account)  => setActiveAccountState(account);
   const addAccount = (account: Account) => {
     setAccounts((prev) => [...prev, account]);
@@ -200,7 +211,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       activePage, setActivePage,
       activeTradeId, setActiveTradeId,
-      trades, allTrades, setTrades, reloadTrades, updateTradeInMemory,
+      trades, allTrades, setTrades, reloadTrades, updateTradeInMemory, deleteTrade,
       selectedTrade, setSelectedTrade,
       loading,
       accounts, activeAccount, setActiveAccount, addAccount,

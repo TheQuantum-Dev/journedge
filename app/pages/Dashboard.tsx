@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import {
   TrendingUp, TrendingDown, Target, Zap, Upload, Search, X,
-  ChevronDown, ShieldCheck, ShieldAlert,
+  ChevronDown, ShieldCheck, ShieldAlert, Trash2,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useSettings } from "../hooks/useSettings";
@@ -93,7 +93,7 @@ function DailyRiskStrip({ trades }: { trades: Trade[] }) {
               ${Math.abs(todayLoss).toFixed(2)} / ${dailyLossLimit.toFixed(2)}
             </span>
           </div>
-          <div style={{ height: "6px", background: "var(--bg-secondary)", borderRadius: "4px", overflow: "hidden" }}>
+          <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "4px", overflow: "hidden" }}>
             <div style={{
               height: "100%", width: `${lossUsedPct}%`,
               background: lossBreached ? "#ff4d6a" : lossWarning ? "#fbbf24" : "#00e57a",
@@ -116,7 +116,7 @@ function DailyRiskStrip({ trades }: { trades: Trade[] }) {
               {todayCount} / {maxDailyTrades}
             </span>
           </div>
-          <div style={{ height: "6px", background: "var(--bg-secondary)", borderRadius: "4px", overflow: "hidden" }}>
+          <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "4px", overflow: "hidden" }}>
             <div style={{
               height: "100%", width: `${tradeUsedPct}%`,
               background: tradeBreached ? "#ff4d6a" : tradeWarning ? "#fbbf24" : "#00e57a",
@@ -182,7 +182,7 @@ function SelectWrap({ children }: { children: React.ReactNode }) {
 interface Props { onAddTrade: () => void; }
 
 export default function Dashboard({ onAddTrade }: Props) {
-  const { trades, setActivePage, setSelectedTrade } = useApp();
+  const { trades, setActivePage, setSelectedTrade, deleteTrade } = useApp();
 
   const [search, setSearch]             = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -190,6 +190,7 @@ export default function Dashboard({ onAddTrade }: Props) {
   const [filterTag, setFilterTag]       = useState("");
   const [filterFrom, setFilterFrom]     = useState("");
   const [filterTo, setFilterTo]         = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const symbols = useMemo(() => {
     const set = new Set(trades.map((t) => t.underlying));
@@ -249,6 +250,15 @@ export default function Dashboard({ onAddTrade }: Props) {
     { label: "Profit Factor", value: String(profitFactor), sub: "Avg win / avg loss",                   positive: Number(profitFactor) >= 1, icon: Zap },
     { label: "Avg Loss",      value: `$${avgLoss.toFixed(2)}`, sub: "Per losing trade",                 positive: false, icon: TrendingDown },
   ];
+
+  const handleDelete = async (id: string) => {
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      return;
+    }
+    await deleteTrade(id);
+    setConfirmDeleteId(null);
+  };
 
   return (
     <>
@@ -423,7 +433,7 @@ export default function Dashboard({ onAddTrade }: Props) {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
-                    {["Date", "Symbol", "Type", "Strike", "Expiry", "Qty", "Entry", "Exit", "P&L", "Status"].map((h) => (
+                    {["Date", "Symbol", "Type", "Strike", "Expiry", "Qty", "Entry", "Exit", "P&L", "Status", ""].map((h) => (
                       <th key={h} style={{
                         padding: "10px 16px", textAlign: "left",
                         color: "var(--text-muted)", fontWeight: "600", whiteSpace: "nowrap",
@@ -440,7 +450,10 @@ export default function Dashboard({ onAddTrade }: Props) {
                       onClick={() => setSelectedTrade(trade)}
                       style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
                       onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "transparent";
+                        if (confirmDeleteId === trade.id) setConfirmDeleteId(null);
+                      }}
                     >
                       <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>{trade.date}</td>
                       <td style={{ padding: "12px 16px", color: "var(--text-primary)", fontWeight: "700" }}>{trade.underlying}</td>
@@ -473,6 +486,33 @@ export default function Dashboard({ onAddTrade }: Props) {
                         }}>
                           {trade.status.toUpperCase()}
                         </span>
+                      </td>
+                      <td style={{ padding: "8px 12px", width: "48px" }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(trade.id); }}
+                          title={confirmDeleteId === trade.id ? "Click again to confirm" : "Delete trade"}
+                          style={{
+                            background: confirmDeleteId === trade.id ? "rgba(255,77,106,0.15)" : "transparent",
+                            border: `1px solid ${confirmDeleteId === trade.id ? "#ff4d6a" : "transparent"}`,
+                            borderRadius: "6px", padding: "5px 7px", cursor: "pointer",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            transition: "all 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (confirmDeleteId !== trade.id) {
+                              e.currentTarget.style.background = "rgba(255,77,106,0.1)";
+                              e.currentTarget.style.borderColor = "rgba(255,77,106,0.4)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (confirmDeleteId !== trade.id) {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.borderColor = "transparent";
+                            }
+                          }}
+                        >
+                          <Trash2 size={13} color={confirmDeleteId === trade.id ? "#ff4d6a" : "#8888aa"} />
+                        </button>
                       </td>
                     </tr>
                   ))}
