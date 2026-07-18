@@ -8,9 +8,9 @@ import {
 } from "lucide-react";
 
 const inputStyle: React.CSSProperties = {
-  width: "100%", padding: "12px 14px", borderRadius: "10px",
+  width: "100%", padding: "10px 12px", borderRadius: "10px",
   border: "1px solid var(--border)", background: "var(--bg-secondary)",
-  color: "var(--text-primary)", fontSize: "15px", fontWeight: "600",
+  color: "var(--text-primary)", fontSize: "13px", fontWeight: "600",
   fontFamily: "'DM Sans', sans-serif",
   boxSizing: "border-box" as const, outline: "none",
   transition: "border-color 0.15s",

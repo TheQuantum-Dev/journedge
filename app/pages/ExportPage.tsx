@@ -22,7 +22,7 @@ const ExportPDFInner = dynamic(() => import("../components/ExportPDFInner"), {
   ),
 });
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Types
 interface ReportOptions {
   // Filters
   dateFrom: string;
@@ -42,7 +42,7 @@ interface ReportOptions {
   journalLayout: "1" | "2" | "4";
 }
 
-// ─── Subcomponents ────────────────────────────────────────────────────────────
+// Subcomponents
 function SectionHeading({ icon: Icon, label }: { icon: any; label: string }) {
   return (
     <div style={{
@@ -211,7 +211,7 @@ function MultiSelect({
   );
 }
 
-// ─── Live Preview ─────────────────────────────────────────────────────────────
+// Live Preview
 // A scaled-down visual mock of what the PDF pages will look like.
 // We can't actually render react-pdf to canvas here without a worker,
 // so we build a CSS replica that mirrors the real document layout.
@@ -337,7 +337,7 @@ function LivePreview({
   );
 }
 
-// ─── Main Export Page ─────────────────────────────────────────────────────────
+// Main Export Page
 export default function ExportPage() {
   const { trades, activeAccount } = useApp();
 
@@ -383,11 +383,21 @@ export default function ExportPage() {
     activeAccount?.name?.toLowerCase().replace(/\s+/g, "-") || "account"
   }-${new Date().toISOString().split("T")[0]}.pdf`;
 
-  // ── Render ──
+  // Render
   return (
-    <div style={{ display: "flex", gap: "24px", height: "calc(100vh - 64px)", overflow: "hidden" }}>
+    <div>
+      <div style={{ marginBottom: "24px" }}>
+        <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
+          Export
+        </h2>
+        <p style={{ color: "var(--text-muted)", fontSize: "14px", marginTop: "4px" }}>
+          Build a PDF performance report from your trade history
+        </p>
+      </div>
 
-      {/* ── Left Panel: Report Builder ── */}
+      <div style={{ display: "flex", gap: "24px", height: "calc(100vh - 168px)", overflow: "hidden" }}>
+
+      {/* Left Panel: Report Builder */}
       <div style={{
         width: "340px", minWidth: "340px",
         background: "var(--bg-secondary)",
@@ -556,6 +566,7 @@ export default function ExportPage() {
         }}>
           Preview is approximate — the exported PDF will be full resolution
         </p>
+      </div>
       </div>
     </div>
   );

@@ -442,7 +442,7 @@ export default function JournalPage() {
           <BookOpen size={28} color="var(--accent-green)" />
         </div>
         <div style={{ textAlign: "center" }}>
-          <h2 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "8px" }}>
+          <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "-0.5px", marginBottom: "8px" }}>
             No trades yet
           </h2>
           <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>

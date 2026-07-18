@@ -823,7 +823,7 @@ export default function SettingsPage() {
                       transition: "background 0.3s ease, box-shadow 0.3s ease",
                     }}
                   />
-                  <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "'DM Sans', sans-serif" }}>
+                  <span style={{ fontSize: "13px", color: "var(--text-muted)", fontFamily: "'DM Sans', sans-serif" }}>
                     {checkingUpdate ? "Checking..." : "Check for updates"}
                   </span>
                 </button>

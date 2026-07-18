@@ -477,7 +477,7 @@ export default function AnalyticsPage() {
   return (
     <div>
       <div style={{ marginBottom: "24px" }}>
-        <h2 style={{ fontSize: "28px", fontWeight: "800", color: "var(--text-primary)", letterSpacing: "-0.5px", marginBottom: "4px" }}>
+        <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "-0.5px", marginBottom: "4px" }}>
           Analytics
         </h2>
         <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
@@ -742,7 +742,7 @@ export default function AnalyticsPage() {
         </>
       )}
 
-      {/* Heatmap — Phase 4 */}
+      {/* Heatmap */}
       {activeTab === "heatmap" && (
         <>
           {stats.hourData.length === 0 ? (
