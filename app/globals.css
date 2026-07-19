@@ -20,6 +20,20 @@
   --accent-blue: #4d9fff;
 }
 
+[data-theme="light"] {
+  --bg-primary: #f0f0f8;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #e8e8f0;
+  --border: #d4d4e4;
+  --text-primary: #0a0a1a;
+  --text-secondary: #3a3a5c;
+  --text-muted: #7070a0;
+  --accent-red: #e8294a;
+  --accent-red-dim: rgba(232,41,74,0.1);
+  --accent-blue: #2979d4;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -34,7 +48,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Syne', sans-serif;
+  font-family: 'DM Sans', sans-serif;
 }
 
 ::-webkit-scrollbar {
@@ -52,4 +66,12 @@ h1, h2, h3, h4, h5, h6 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+.recharts-tooltip-item,
+.recharts-tooltip-item-name,
+.recharts-tooltip-item-separator,
+.recharts-tooltip-item-value,
+.recharts-tooltip-item-unit {
+  color: #f0f0ff !important;
 }

@@ -165,7 +165,7 @@ export default function ImportPage() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: "32px" }}>
-        <h2 style={{ fontSize: "26px", fontWeight: "700", color: "#f0f0ff", letterSpacing: "-0.5px" }}>
+        <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
           Import Trades
         </h2>
         <p style={{ color: "#8888aa", fontSize: "14px", marginTop: "4px" }}>

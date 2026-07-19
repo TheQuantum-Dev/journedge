@@ -38,6 +38,9 @@ export default function RootLayout({
                   document.documentElement.style.setProperty('--accent-dim', colorMap[accent]);
                   document.documentElement.style.setProperty('--accent-green-dim', colorMap[accent]);
                 }
+                if (settings.theme === 'light') {
+                  document.documentElement.setAttribute('data-theme', 'light');
+                }
               }
             } catch(e) {}
           `

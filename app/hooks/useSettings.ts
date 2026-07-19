@@ -7,6 +7,9 @@ export interface Settings {
   defaultCommission: number;
   defaultFees: number;
   currencyFormat: "USD" | "EUR" | "GBP" | "CAD" | "AUD";
+  dailyLossLimit: number;
+  maxDailyTrades: number;
+  defaultRiskPct: number;
 }
 
 const DEFAULTS: Settings = {
@@ -16,15 +19,18 @@ const DEFAULTS: Settings = {
   defaultCommission: 0,
   defaultFees: 0,
   currencyFormat: "USD",
+  dailyLossLimit: 0,
+  maxDailyTrades: 0,
+  defaultRiskPct: 1,
 };
 
 const STORAGE_KEY = "journedge_settings";
 
 const COLOR_MAP: Record<string, { dim: string }> = {
-  "#00e57a": { dim: "rgba(0,229,122,0.12)" },
-  "#4d9fff": { dim: "rgba(77,159,255,0.12)" },
+  "#00e57a": { dim: "rgba(0,229,122,0.12)"   },
+  "#4d9fff": { dim: "rgba(77,159,255,0.12)"  },
   "#a78bfa": { dim: "rgba(167,139,250,0.12)" },
-  "#fb923c": { dim: "rgba(251,146,60,0.12)" },
+  "#fb923c": { dim: "rgba(251,146,60,0.12)"  },
   "#f472b6": { dim: "rgba(244,114,182,0.12)" },
 };
 
@@ -37,6 +43,14 @@ function applyAccentColor(value: string) {
   root.style.setProperty("--accent-green-dim", color.dim);
 }
 
+function applyTheme(theme: "dark" | "light") {
+  if (theme === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+}
+
 export function useSettings() {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
 
@@ -47,6 +61,7 @@ export function useSettings() {
         const parsed: Settings = { ...DEFAULTS, ...JSON.parse(stored) };
         setSettings(parsed);
         if (parsed.accentColor) applyAccentColor(parsed.accentColor);
+        if (parsed.theme) applyTheme(parsed.theme);
       }
     } catch {}
   }, []);
@@ -56,12 +71,14 @@ export function useSettings() {
     setSettings(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     if (partial.accentColor) applyAccentColor(partial.accentColor);
+    if (partial.theme !== undefined) applyTheme(partial.theme);
   };
 
   const resetSettings = () => {
     setSettings(DEFAULTS);
     localStorage.removeItem(STORAGE_KEY);
     applyAccentColor(DEFAULTS.accentColor);
+    applyTheme(DEFAULTS.theme);
   };
 
   return { settings, updateSettings, resetSettings };
