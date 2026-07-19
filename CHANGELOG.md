@@ -2,6 +2,39 @@
 
 All notable changes to Journedge are documented here.
 
+## [4.0.0](https://github.com/TheQuantum-Dev/journedge/compare/v3.2.1...v4.0.0) — 2026-07-19
+
+> 15 commits · 2 contributors
+
+### ✨ New Features
+
+- delete trade from dashboard, journal, and trade panel [`c4e6d94`](https://github.com/TheQuantum-Dev/journedge/commit/c4e6d94)
+- playbook linking from journal editor and trade panel [`c3b102d`](https://github.com/TheQuantum-Dev/journedge/commit/c3b102d)
+- light mode, keyboard shortcuts, JSON export [`9735975`](https://github.com/TheQuantum-Dev/journedge/commit/9735975)
+- improve sizer - increase risk to 100% [`8dcbfbd`](https://github.com/TheQuantum-Dev/journedge/commit/8dcbfbd)
+- position sizing calculator — risk-based sizing for stocks, options, futures [`8634dcd`](https://github.com/TheQuantum-Dev/journedge/commit/8634dcd)
+- daily risk controls — loss limit, max trades, dashboard indicators [`1672672`](https://github.com/TheQuantum-Dev/journedge/commit/1672672)
+- analytics — hour-of-day heatmap, Recharts formatter type fix [`b3b2f59`](https://github.com/TheQuantum-Dev/journedge/commit/b3b2f59)
+- playbook — setup library with per-entry trade stats, detail panel, rules editor [`2f60fde`](https://github.com/TheQuantum-Dev/journedge/commit/2f60fde)
+- pre-trade planning — plans API, playbook API, PlansPage, PlaybookPage, sidebar nav, hourOfDay extraction [`04feb28`](https://github.com/TheQuantum-Dev/journedge/commit/04feb28)
+- schema — TradePlan, Playbook tables, Trade additions (hourOfDay, playbookId, planId) and version change [`1c2e8d0`](https://github.com/TheQuantum-Dev/journedge/commit/1c2e8d0)
+
+### 📚 Documentation
+
+- update settings and import screenshots for v4.0.0 [`c86d878`](https://github.com/TheQuantum-Dev/journedge/commit/c86d878)
+- Improved changelog generator, security policy, CSS type declaration, bug fixes and font fixes [`c9b02e1`](https://github.com/TheQuantum-Dev/journedge/commit/c9b02e1)
+- v4.0.0 README — trade deletion, Schwab import, screenshots, file structure [`4b28619`](https://github.com/TheQuantum-Dev/journedge/commit/4b28619)
+
+### 🔧 Maintenance
+
+- **deps**: bump linkify-it from 5.0.0 to 5.0.2 [`154c1db`](https://github.com/TheQuantum-Dev/journedge/commit/154c1db)
+- fixed wallet color sync with settings [`172ea9b`](https://github.com/TheQuantum-Dev/journedge/commit/172ea9b)
+
+### 👥 Contributors
+
+- The Quantum Dev
+- dependabot[bot]
+
 ## [3.2.1] - 2026-07-14
 
 ### Bug Fixes
