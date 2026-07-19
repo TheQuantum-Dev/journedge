@@ -2,6 +2,23 @@
 
 All notable changes to Journedge are documented here.
 
+## [3.2.1] - 2026-07-14
+
+### Bug Fixes
+
+- wire Schwab parser into import detection and add Charles Schwab card (`c703662`)
+
+### Maintenance
+
+- revert changes to AnalyticsPage (`ae77de9`)
+- **deps**: bump next from 16.1.6 to 16.2.6 (`b10dde2`)
+- update readme and security files for v3.2.0 (`0134954`)
+
+### Other Changes
+
+- rename: parseSchwabRealizedGainLossCSV.ts → parseSchwabCSV.ts and clean up parser logic (`3b1d07c`)
+- Add Schwab realized gain/loss import (`b46902f`)
+
 ## [3.2.0] - 2026-04-09
 
 ### New Features

@@ -93,7 +93,7 @@ export default function AccountsPage() {
       {/* Header */}
       <div style={{ marginBottom: "32px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <h2 style={{ fontSize: "26px", fontWeight: "700", color: "#f0f0ff", letterSpacing: "-0.5px" }}>
+          <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "-0.5px" }}>
             Accounts
           </h2>
           <p style={{ color: "#8888aa", fontSize: "14px", marginTop: "4px" }}>

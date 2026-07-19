@@ -1,12 +1,144 @@
 "use client";
 import { useState, useMemo } from "react";
-import { TrendingUp, TrendingDown, Target, Zap, Upload, Search, X, ChevronDown } from "lucide-react";
+import {
+  TrendingUp, TrendingDown, Target, Zap, Upload, Search, X,
+  ChevronDown, ShieldCheck, ShieldAlert, Trash2,
+} from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { useSettings } from "../hooks/useSettings";
 import { Trade } from "../lib/types";
 
+// Daily Risk Controls Strip 
+function DailyRiskStrip({ trades }: { trades: Trade[] }) {
+  const { settings } = useSettings();
+  const { dailyLossLimit, maxDailyTrades } = settings;
+
+  const todayKey = new Date().toISOString().split("T")[0];
+
+  // ALL hooks must run before any conditional return
+  const todayTrades = useMemo(() => {
+    return trades.filter((t) => {
+      const raw = t.date;
+      let normalized = raw;
+      if (raw.includes("/")) {
+        const [mm, dd, yyyy] = raw.split("/");
+        normalized = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+      }
+      return normalized === todayKey;
+    });
+  }, [trades, todayKey]);
+
+  // No controls configured — render nothing (after hooks)
+  if (!dailyLossLimit && !maxDailyTrades) return null;
+
+  const todayPnl      = todayTrades.reduce((s, t) => s + t.pnl, 0);
+  const todayLoss     = Math.min(todayPnl, 0);
+  const todayCount    = todayTrades.length;
+
+  const lossUsedPct   = dailyLossLimit > 0
+    ? Math.min(100, (Math.abs(todayLoss) / dailyLossLimit) * 100)
+    : 0;
+  const tradeUsedPct  = maxDailyTrades > 0
+    ? Math.min(100, (todayCount / maxDailyTrades) * 100)
+    : 0;
+
+  const lossBreached  = dailyLossLimit > 0 && Math.abs(todayLoss) >= dailyLossLimit;
+  const tradeBreached = maxDailyTrades > 0 && todayCount >= maxDailyTrades;
+  const lossWarning   = !lossBreached  && lossUsedPct  >= 75;
+  const tradeWarning  = !tradeBreached && tradeUsedPct >= 75;
+
+  const anyBreached = lossBreached || tradeBreached;
+  const anyWarning  = !anyBreached && (lossWarning || tradeWarning);
+
+  const borderColor = anyBreached
+    ? "rgba(255,77,106,0.5)"
+    : anyWarning
+    ? "rgba(251,191,36,0.4)"
+    : "rgba(0,229,122,0.2)";
+
+  const bgColor = anyBreached
+    ? "rgba(255,77,106,0.06)"
+    : anyWarning
+    ? "rgba(251,191,36,0.05)"
+    : "rgba(0,229,122,0.04)";
+
+  const StatusIcon  = anyBreached ? ShieldAlert : ShieldCheck;
+  const statusColor = anyBreached ? "#ff4d6a" : anyWarning ? "#fbbf24" : "#00e57a";
+
+  return (
+    <div style={{
+      background: bgColor, border: `1px solid ${borderColor}`,
+      borderRadius: "12px", padding: "14px 18px", marginBottom: "24px",
+      display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+        <StatusIcon size={16} color={statusColor} />
+        <span style={{ fontSize: "12px", fontWeight: "700", color: statusColor }}>
+          {anyBreached ? "Limit Reached" : anyWarning ? "Approaching Limit" : "Within Limits"}
+        </span>
+      </div>
+
+      <div style={{ width: "1px", height: "28px", background: "var(--border)", flexShrink: 0 }} />
+
+      {dailyLossLimit > 0 && (
+        <div style={{ flex: 1, minWidth: "180px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", letterSpacing: "0.3px" }}>
+              DAILY LOSS
+            </span>
+            <span style={{
+              fontSize: "11px", fontWeight: "700",
+              color: lossBreached ? "#ff4d6a" : lossWarning ? "#fbbf24" : "var(--text-muted)",
+            }}>
+              ${Math.abs(todayLoss).toFixed(2)} / ${dailyLossLimit.toFixed(2)}
+            </span>
+          </div>
+          <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "4px", overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${lossUsedPct}%`,
+              background: lossBreached ? "#ff4d6a" : lossWarning ? "#fbbf24" : "#00e57a",
+              borderRadius: "4px", transition: "width 0.3s ease",
+            }} />
+          </div>
+        </div>
+      )}
+
+      {maxDailyTrades > 0 && (
+        <div style={{ flex: 1, minWidth: "180px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+            <span style={{ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", letterSpacing: "0.3px" }}>
+              TRADES TODAY
+            </span>
+            <span style={{
+              fontSize: "11px", fontWeight: "700",
+              color: tradeBreached ? "#ff4d6a" : tradeWarning ? "#fbbf24" : "var(--text-muted)",
+            }}>
+              {todayCount} / {maxDailyTrades}
+            </span>
+          </div>
+          <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "4px", overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${tradeUsedPct}%`,
+              background: tradeBreached ? "#ff4d6a" : tradeWarning ? "#fbbf24" : "#00e57a",
+              borderRadius: "4px", transition: "width 0.3s ease",
+            }} />
+          </div>
+        </div>
+      )}
+
+      <div style={{ flexShrink: 0, textAlign: "right" }}>
+        <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "2px" }}>TODAY</div>
+        <div style={{ fontSize: "16px", fontWeight: "800", color: todayPnl >= 0 ? "#00e57a" : "#ff4d6a" }}>
+          {todayPnl >= 0 ? "+" : ""}${todayPnl.toFixed(2)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Stat Cards 
 function StatCard({ label, value, sub, positive, icon: Icon }: {
-  label: string; value: string; sub: string;
-  positive: boolean; icon: any;
+  label: string; value: string; sub: string; positive: boolean; icon: any;
 }) {
   return (
     <div style={{
@@ -32,8 +164,7 @@ const selectStyle: React.CSSProperties = {
   padding: "8px 30px 8px 12px", borderRadius: "8px",
   border: "1px solid var(--border)", background: "var(--bg-card)",
   color: "#f0f0ff", fontSize: "12px", fontFamily: "'DM Sans', sans-serif",
-  cursor: "pointer", appearance: "none", WebkitAppearance: "none",
-  outline: "none",
+  cursor: "pointer", appearance: "none", WebkitAppearance: "none", outline: "none",
 };
 
 function SelectWrap({ children }: { children: React.ReactNode }) {
@@ -48,19 +179,18 @@ function SelectWrap({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface Props {
-  onAddTrade: () => void;
-}
+interface Props { onAddTrade: () => void; }
 
 export default function Dashboard({ onAddTrade }: Props) {
-  const { trades, setActivePage, setSelectedTrade } = useApp();
+  const { trades, setActivePage, setSelectedTrade, deleteTrade } = useApp();
 
-  const [search, setSearch]           = useState("");
+  const [search, setSearch]             = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSymbol, setFilterSymbol] = useState("");
-  const [filterTag, setFilterTag]     = useState("");
-  const [filterFrom, setFilterFrom]   = useState("");
-  const [filterTo, setFilterTo]       = useState("");
+  const [filterTag, setFilterTag]       = useState("");
+  const [filterFrom, setFilterFrom]     = useState("");
+  const [filterTo, setFilterTo]         = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const symbols = useMemo(() => {
     const set = new Set(trades.map((t) => t.underlying));
@@ -82,12 +212,8 @@ export default function Dashboard({ onAddTrade }: Props) {
   ].filter(Boolean).length;
 
   const clearFilters = () => {
-    setSearch("");
-    setFilterStatus("all");
-    setFilterSymbol("");
-    setFilterTag("");
-    setFilterFrom("");
-    setFilterTo("");
+    setSearch(""); setFilterStatus("all"); setFilterSymbol("");
+    setFilterTag(""); setFilterFrom(""); setFilterTo("");
   };
 
   const filtered = useMemo(() => {
@@ -95,20 +221,11 @@ export default function Dashboard({ onAddTrade }: Props) {
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterSymbol && t.underlying !== filterSymbol) return false;
       if (filterTag && !(Array.isArray(t.tags) ? t.tags : []).includes(filterTag)) return false;
-      if (filterFrom) {
-        const from = new Date(filterFrom).getTime();
-        const tradeDate = new Date(t.date).getTime();
-        if (tradeDate < from) return false;
-      }
-      if (filterTo) {
-        const to = new Date(filterTo).getTime();
-        const tradeDate = new Date(t.date).getTime();
-        if (tradeDate > to) return false;
-      }
+      if (filterFrom && new Date(t.date).getTime() < new Date(filterFrom).getTime()) return false;
+      if (filterTo   && new Date(t.date).getTime() > new Date(filterTo).getTime())   return false;
       if (search) {
         const q = search.toLowerCase();
-        if (!t.underlying.toLowerCase().includes(q) &&
-            !t.symbol.toLowerCase().includes(q)) return false;
+        if (!t.underlying.toLowerCase().includes(q) && !t.symbol.toLowerCase().includes(q)) return false;
       }
       return true;
     });
@@ -118,7 +235,7 @@ export default function Dashboard({ onAddTrade }: Props) {
   const wins         = filtered.filter((t) => t.status === "win");
   const losses       = filtered.filter((t) => t.status === "loss");
   const winRate      = filtered.length > 0 ? Math.round((wins.length / filtered.length) * 100) : 0;
-  const avgWin       = wins.length > 0 ? wins.reduce((s, t) => s + t.pnl, 0) / wins.length : 0;
+  const avgWin       = wins.length   > 0 ? wins.reduce((s, t)   => s + t.pnl, 0) / wins.length   : 0;
   const avgLoss      = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pnl, 0) / losses.length) : 0;
   const profitFactor = avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : "—";
 
@@ -129,25 +246,19 @@ export default function Dashboard({ onAddTrade }: Props) {
       sub: `${filtered.length} trade${filtered.length !== 1 ? "s" : ""}${activeFilterCount > 0 ? " (filtered)" : ""}`,
       positive: totalPnl >= 0, icon: TrendingUp,
     },
-    {
-      label: "Win Rate",
-      value: `${winRate}%`,
-      sub: `${wins.length}W / ${losses.length}L`,
-      positive: winRate >= 50, icon: Target,
-    },
-    {
-      label: "Profit Factor",
-      value: String(profitFactor),
-      sub: "Avg win / avg loss",
-      positive: Number(profitFactor) >= 1, icon: Zap,
-    },
-    {
-      label: "Avg Loss",
-      value: `$${avgLoss.toFixed(2)}`,
-      sub: "Per losing trade",
-      positive: false, icon: TrendingDown,
-    },
+    { label: "Win Rate",      value: `${winRate}%`,        sub: `${wins.length}W / ${losses.length}L`,  positive: winRate >= 50, icon: Target },
+    { label: "Profit Factor", value: String(profitFactor), sub: "Avg win / avg loss",                   positive: Number(profitFactor) >= 1, icon: Zap },
+    { label: "Avg Loss",      value: `$${avgLoss.toFixed(2)}`, sub: "Per losing trade",                 positive: false, icon: TrendingDown },
   ];
+
+  const handleDelete = async (id: string) => {
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      return;
+    }
+    await deleteTrade(id);
+    setConfirmDeleteId(null);
+  };
 
   return (
     <>
@@ -159,6 +270,9 @@ export default function Dashboard({ onAddTrade }: Props) {
           Welcome back. Here's how you're performing.
         </p>
       </div>
+
+      {/* Daily risk strip — only renders when limits are configured */}
+      <DailyRiskStrip trades={trades} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "32px" }}>
         {stats.map((s) => <StatCard key={s.label} {...s} />)}
@@ -223,8 +337,7 @@ export default function Dashboard({ onAddTrade }: Props) {
                 {activeFilterCount > 0 && (
                   <span style={{
                     background: "var(--accent-green-dim)", color: "var(--accent-green)",
-                    fontSize: "11px", fontWeight: "700", padding: "2px 8px",
-                    borderRadius: "20px",
+                    fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "20px",
                   }}>
                     {activeFilterCount} filter{activeFilterCount !== 1 ? "s" : ""} active
                   </span>
@@ -241,12 +354,11 @@ export default function Dashboard({ onAddTrade }: Props) {
                   style={{
                     display: "flex", alignItems: "center", gap: "4px",
                     background: "none", border: "none", cursor: "pointer",
-                    color: "#ff4d6a", fontSize: "12px", fontFamily: "'DM Sans', sans-serif",
-                    fontWeight: "600",
+                    color: "#ff4d6a", fontSize: "12px",
+                    fontFamily: "'DM Sans', sans-serif", fontWeight: "600",
                   }}
                 >
-                  <X size={12} />
-                  Clear filters
+                  <X size={12} /> Clear filters
                 </button>
               )}
             </div>
@@ -254,18 +366,15 @@ export default function Dashboard({ onAddTrade }: Props) {
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", paddingBottom: "16px" }}>
               <div style={{ position: "relative", flex: "1", minWidth: "160px" }}>
                 <Search size={13} color="#8888aa" style={{
-                  position: "absolute", left: "10px", top: "50%",
-                  transform: "translateY(-50%)",
+                  position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)",
                 }} />
                 <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={search} onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search symbol..."
                   style={{
-                    width: "100%", padding: "8px 12px 8px 30px",
-                    borderRadius: "8px", border: "1px solid var(--border)",
-                    background: "var(--bg-secondary)", color: "#f0f0ff",
-                    fontSize: "12px", fontFamily: "'DM Sans', sans-serif",
+                    width: "100%", padding: "8px 12px 8px 30px", borderRadius: "8px",
+                    border: "1px solid var(--border)", background: "var(--bg-secondary)",
+                    color: "#f0f0ff", fontSize: "12px", fontFamily: "'DM Sans', sans-serif",
                     boxSizing: "border-box" as const, outline: "none",
                   }}
                 />
@@ -299,13 +408,11 @@ export default function Dashboard({ onAddTrade }: Props) {
               )}
 
               <input
-                type="date" value={filterFrom}
-                onChange={(e) => setFilterFrom(e.target.value)}
+                type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)}
                 style={{ ...selectStyle, padding: "8px 12px", colorScheme: "dark" }}
               />
               <input
-                type="date" value={filterTo}
-                onChange={(e) => setFilterTo(e.target.value)}
+                type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)}
                 style={{ ...selectStyle, padding: "8px 12px", colorScheme: "dark" }}
               />
             </div>
@@ -326,7 +433,7 @@ export default function Dashboard({ onAddTrade }: Props) {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
-                    {["Date", "Symbol", "Type", "Strike", "Expiry", "Qty", "Entry", "Exit", "P&L", "Status"].map((h) => (
+                    {["Date", "Symbol", "Type", "Strike", "Expiry", "Qty", "Entry", "Exit", "P&L", "Status", ""].map((h) => (
                       <th key={h} style={{
                         padding: "10px 16px", textAlign: "left",
                         color: "var(--text-muted)", fontWeight: "600", whiteSpace: "nowrap",
@@ -343,7 +450,10 @@ export default function Dashboard({ onAddTrade }: Props) {
                       onClick={() => setSelectedTrade(trade)}
                       style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
                       onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-hover)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "transparent";
+                        if (confirmDeleteId === trade.id) setConfirmDeleteId(null);
+                      }}
                     >
                       <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>{trade.date}</td>
                       <td style={{ padding: "12px 16px", color: "var(--text-primary)", fontWeight: "700" }}>{trade.underlying}</td>
@@ -361,10 +471,7 @@ export default function Dashboard({ onAddTrade }: Props) {
                       <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>{trade.quantity}</td>
                       <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>${trade.entryPrice}</td>
                       <td style={{ padding: "12px 16px", color: "var(--text-secondary)" }}>${trade.exitPrice}</td>
-                      <td style={{
-                        padding: "12px 16px", fontWeight: "700",
-                        color: trade.pnl >= 0 ? "#00e57a" : "#ff4d6a",
-                      }}>
+                      <td style={{ padding: "12px 16px", fontWeight: "700", color: trade.pnl >= 0 ? "#00e57a" : "#ff4d6a" }}>
                         {trade.pnl >= 0 ? "+" : ""}${trade.pnl}
                       </td>
                       <td style={{ padding: "12px 16px" }}>
@@ -379,6 +486,33 @@ export default function Dashboard({ onAddTrade }: Props) {
                         }}>
                           {trade.status.toUpperCase()}
                         </span>
+                      </td>
+                      <td style={{ padding: "8px 12px", width: "48px" }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(trade.id); }}
+                          title={confirmDeleteId === trade.id ? "Click again to confirm" : "Delete trade"}
+                          style={{
+                            background: confirmDeleteId === trade.id ? "rgba(255,77,106,0.15)" : "transparent",
+                            border: `1px solid ${confirmDeleteId === trade.id ? "#ff4d6a" : "transparent"}`,
+                            borderRadius: "6px", padding: "5px 7px", cursor: "pointer",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            transition: "all 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (confirmDeleteId !== trade.id) {
+                              e.currentTarget.style.background = "rgba(255,77,106,0.1)";
+                              e.currentTarget.style.borderColor = "rgba(255,77,106,0.4)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (confirmDeleteId !== trade.id) {
+                              e.currentTarget.style.background = "transparent";
+                              e.currentTarget.style.borderColor = "transparent";
+                            }
+                          }}
+                        >
+                          <Trash2 size={13} color={confirmDeleteId === trade.id ? "#ff4d6a" : "#8888aa"} />
+                        </button>
                       </td>
                     </tr>
                   ))}

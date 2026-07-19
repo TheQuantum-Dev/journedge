@@ -18,6 +18,7 @@ import JournalToolbar from "../components/JournalToolbar";
 import TagSelector from "../components/TagSelector";
 import {
   ArrowLeft, FileText, Check, Loader, LayoutTemplate, X, Trash2,
+  Library, ChevronDown,
 } from "lucide-react";
 
 const ExtendedTextStyle = TextStyle.extend({
@@ -70,6 +71,116 @@ function StatPill({ label, value, color }: { label: string; value: string; color
       <span style={{ fontSize: 14, fontWeight: 700, color: color || "var(--text-primary)" }}>
         {value}
       </span>
+    </div>
+  );
+}
+
+// Playbook selector — dropdown that saves playbookId immediately on change
+function PlaybookSelector({ trade }: { trade: Trade }) {
+  const { playbook, updateTradeInMemory } = useApp();
+  const [open, setOpen]     = useState(false);
+  const [saving, setSaving] = useState(false);
+  const ref                 = useRef<HTMLDivElement>(null);
+
+  const linked = playbook.find((p) => p.id === trade.playbookId);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const select = async (id: string | null) => {
+    setSaving(true);
+    setOpen(false);
+    await fetch("/api/trades", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: trade.id, playbookId: id }),
+    });
+    updateTradeInMemory(trade.id, { playbookId: id ?? undefined });
+    setSaving(false);
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 6 }}>
+        PLAYBOOK SETUP
+      </div>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "8px 12px", borderRadius: 8,
+          border: `1px solid ${linked ? "var(--accent-green)" : "var(--border)"}`,
+          background: linked ? "var(--accent-green-dim)" : "var(--bg-secondary)",
+          color: linked ? "var(--accent-green)" : "var(--text-muted)",
+          fontSize: 13, fontWeight: linked ? 600 : 400,
+          cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+          minWidth: 200,
+        }}
+      >
+        <Library size={13} />
+        <span style={{ flex: 1, textAlign: "left" }}>
+          {saving ? "Saving…" : linked ? linked.name : "Link to playbook setup"}
+        </span>
+        {linked && !saving && (
+          <span
+            onClick={(e) => { e.stopPropagation(); select(null); }}
+            style={{ display: "flex", alignItems: "center", color: "var(--text-muted)", cursor: "pointer" }}
+          >
+            <X size={12} />
+          </span>
+        )}
+        {!linked && !saving && <ChevronDown size={12} />}
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0,
+          background: "var(--bg-card)", border: "1px solid var(--border)",
+          borderRadius: 10, zIndex: 100, minWidth: 240,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)", overflow: "hidden",
+        }}>
+          {playbook.length === 0 ? (
+            <div style={{ padding: "14px 16px", fontSize: 12, color: "var(--text-muted)" }}>
+              No playbook setups yet — create one in the Playbook page.
+            </div>
+          ) : (
+            playbook.map((entry) => {
+              const isLinked = trade.playbookId === entry.id;
+              return (
+                <button
+                  key={entry.id}
+                  onClick={() => select(isLinked ? null : entry.id)}
+                  style={{
+                    width: "100%", padding: "10px 14px", border: "none",
+                    background: isLinked ? "var(--accent-green-dim)" : "transparent",
+                    color: isLinked ? "var(--accent-green)" : "var(--text-primary)",
+                    cursor: "pointer", textAlign: "left", fontSize: 13,
+                    fontFamily: "'DM Sans', sans-serif",
+                    display: "flex", alignItems: "center", gap: 8,
+                    borderBottom: "1px solid var(--border)",
+                  }}
+                  onMouseEnter={(e) => { if (!isLinked) e.currentTarget.style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { if (!isLinked) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <Library size={12} color={isLinked ? "var(--accent-green)" : "var(--text-muted)"} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: isLinked ? 600 : 400 }}>{entry.name}</div>
+                    {entry.timeframes && (
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{entry.timeframes}</div>
+                    )}
+                  </div>
+                  {isLinked && <Check size={12} />}
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -168,9 +279,9 @@ function SaveTemplateModal({ onSave, onClose }: {
 
   const SCOPE_OPTIONS = [
     { value: "all",    label: "All types" },
-    { value: "option", label: "Options" },
-    { value: "stock",  label: "Stocks" },
-    { value: "future", label: "Futures" },
+    { value: "option", label: "Options"   },
+    { value: "stock",  label: "Stocks"    },
+    { value: "future", label: "Futures"   },
   ];
 
   const toggleScope = (value: string) => {
@@ -479,6 +590,7 @@ export default function JournalEditorPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 0 }}>
+      {/* Top bar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexShrink: 0 }}>
         <button
           onClick={() => setActivePage("journal")}
@@ -539,6 +651,7 @@ export default function JournalEditorPage() {
         </div>
       </div>
 
+      {/* Trade header card */}
       <div style={{
         background: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, padding: "20px 24px", marginBottom: 16, flexShrink: 0,
@@ -570,6 +683,7 @@ export default function JournalEditorPage() {
           </div>
         </div>
 
+        {/* Stat pills */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
           <StatPill label="DATE"  value={trade.date} />
           <StatPill label="ENTRY" value={`$${trade.entryPrice}`} />
@@ -582,14 +696,19 @@ export default function JournalEditorPage() {
           {trade.exitTime  && <StatPill label="EXIT TIME"  value={trade.exitTime}  color="var(--text-secondary)" />}
         </div>
 
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>
-            TAGS
+        {/* Tags + Playbook — side by side */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "start" }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.5px", marginBottom: 8 }}>
+              TAGS
+            </div>
+            <TagSelector selected={currentTags} onChange={saveTags} maxHeight={180} />
           </div>
-          <TagSelector selected={currentTags} onChange={saveTags} maxHeight={180} />
+          <PlaybookSelector trade={trade} />
         </div>
       </div>
-              
+
+      {/* Editor */}
       <div style={{
         background: "var(--bg-card)", border: "1px solid var(--border)",
         borderRadius: 14, overflow: "hidden",
@@ -627,8 +746,8 @@ export default function JournalEditorPage() {
           color: var(--text-muted); pointer-events: none; height: 0;
         }
         .ProseMirror h1 { font-size: 26px; font-weight: 800; color: var(--text-primary); margin: 22px 0 10px; font-family: 'Syne', sans-serif; letter-spacing: -0.5px; }
-        .ProseMirror h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 18px 0 8px;  font-family: 'Syne', sans-serif; }
-        .ProseMirror h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 14px 0 6px;  font-family: 'Syne', sans-serif; }
+        .ProseMirror h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 18px 0 8px; font-family: 'Syne', sans-serif; }
+        .ProseMirror h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 14px 0 6px; font-family: 'Syne', sans-serif; }
         .ProseMirror p  { margin: 0 0 10px; }
         .ProseMirror ul, .ProseMirror ol { padding-left: 22px; margin: 8px 0; }
         .ProseMirror li { margin: 4px 0; }

@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronUp, Search, Tag,
   TrendingUp, TrendingDown, BookOpen,
   MessageSquare, Image as ImageIcon, ExternalLink,
+  Trash2, AlertTriangle,
 } from "lucide-react";
 
 interface DayGroup {
@@ -41,9 +42,21 @@ function TradeCard({
   onOpen: (t: Trade) => void;
   onOpenEditor: (t: Trade) => void;
 }) {
+  const { deleteTrade } = useApp();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const tags = Array.isArray(trade.tags) ? trade.tags : [];
   const images = Array.isArray(trade.imageUrls) ? trade.imageUrls : [];
   const isWin = trade.pnl >= 0;
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    await deleteTrade(trade.id);
+  };
 
   return (
     <div
@@ -227,6 +240,32 @@ function TradeCard({
             <ExternalLink size={11} />
             Open Journal
           </button>
+          <button
+            onClick={handleDelete}
+            title={confirmDelete ? "Click again to confirm" : "Delete trade"}
+            style={{
+              flexShrink: 0, padding: "7px 10px", borderRadius: "7px",
+              border: `1px solid ${confirmDelete ? "#ff4d6a" : "var(--border)"}`,
+              background: confirmDelete ? "rgba(255,77,106,0.1)" : "transparent",
+              color: confirmDelete ? "#ff4d6a" : "var(--text-muted)",
+              cursor: "pointer", display: "flex", alignItems: "center",
+              justifyContent: "center", transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              if (!confirmDelete) {
+                e.currentTarget.style.borderColor = "#ff4d6a";
+                e.currentTarget.style.color = "#ff4d6a";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!confirmDelete) {
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.color = "var(--text-muted)";
+              }
+            }}
+          >
+            {confirmDelete ? <AlertTriangle size={13} /> : <Trash2 size={13} />}
+          </button>
         </div>
       </div>
     </div>
@@ -403,7 +442,7 @@ export default function JournalPage() {
           <BookOpen size={28} color="var(--accent-green)" />
         </div>
         <div style={{ textAlign: "center" }}>
-          <h2 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "8px" }}>
+          <h2 style={{ fontSize: "26px", fontWeight: "700", color: "var(--text-primary)", letterSpacing: "-0.5px", marginBottom: "8px" }}>
             No trades yet
           </h2>
           <p style={{ color: "var(--text-muted)", fontSize: "14px" }}>
@@ -421,6 +460,7 @@ export default function JournalPage() {
         <h2 style={{
           fontSize: "28px", fontWeight: "800", color: "var(--text-primary)",
           letterSpacing: "-0.5px", marginBottom: "4px",
+          fontFamily: "'DM Sans', sans-serif",
         }}>
           Journal
         </h2>

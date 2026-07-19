@@ -20,11 +20,49 @@ export interface Trade {
   rr?: string;
   mae?: number;
   mfe?: number;
+  hourOfDay?: number;
+  playbookId?: string;
+  planId?: string;
   tags?: string[] | string;
   journalEntry?: string;
   link?: string;
   imageUrls?: string[] | string;
   accountId?: string;
+}
+
+export interface TradePlan {
+  id: string;
+  date: string;
+  symbol: string;
+  underlying: string;
+  direction: string;
+  setupType?: string;
+  thesis?: string;
+  entryZone?: string;
+  stopLevel?: number;
+  targetLevel?: number;
+  plannedRR?: string;
+  plannedSize?: number;
+  invalidation?: string;
+  status: "pending" | "executed" | "cancelled" | "missed";
+  tradeId?: string;
+  accountId?: string;
+  createdAt: string;
+}
+
+export interface Playbook {
+  id: string;
+  name: string;
+  description?: string;
+  rules: string[] | string;
+  timeframes?: string;
+  instruments?: string;
+  entryTriggers: string[] | string;
+  exitRules?: string;
+  notes?: string;
+  imageUrls: string[] | string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Account {
@@ -58,5 +96,8 @@ export type PageId =
   | "import"
   | "accounts"
   | "settings"
-  | "export";
+  | "export"
+  | "plans"
+  | "playbook"
+  | "position-sizer";
   

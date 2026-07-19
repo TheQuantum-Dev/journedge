@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { X, Clock, TrendingUp, Link, Save, Image, Trash2, ExternalLink } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Clock, TrendingUp, Link, Save, Image, Trash2, ExternalLink, Library, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import { Trade } from "../lib/types";
 import { useApp } from "../context/AppContext";
 import TagSelector from "./TagSelector";
@@ -29,8 +29,125 @@ function renderJournalPreview(raw: string | null | undefined): string {
   return raw;
 }
 
+// Playbook selector for the side panel
+function PlaybookSelector({ trade }: { trade: Trade }) {
+  const { playbook, updateTradeInMemory } = useApp();
+  const [open, setOpen]     = useState(false);
+  const [saving, setSaving] = useState(false);
+  const ref                 = useRef<HTMLDivElement>(null);
+
+  const linked = playbook.find((p) => p.id === trade.playbookId);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const select = async (id: string | null) => {
+    setSaving(true);
+    setOpen(false);
+    await fetch("/api/trades", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: trade.id, playbookId: id }),
+    });
+    updateTradeInMemory(trade.id, { playbookId: id ?? undefined });
+    setSaving(false);
+  };
+
+  const fieldInput: React.CSSProperties = {
+    flex: 1, background: "var(--bg-card)", border: "1px solid var(--border)",
+    borderRadius: "8px", padding: "9px 12px", color: "var(--text-primary)",
+    fontSize: "13px", fontFamily: "'DM Sans', sans-serif", outline: "none",
+    width: "100%", boxSizing: "border-box" as const,
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 8,
+          padding: "9px 12px", borderRadius: 8,
+          border: `1px solid ${linked ? "var(--accent-green)" : "var(--border)"}`,
+          background: linked ? "var(--accent-green-dim)" : "var(--bg-card)",
+          color: linked ? "var(--accent-green)" : "var(--text-muted)",
+          fontSize: 13, fontWeight: linked ? 600 : 400,
+          cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+          textAlign: "left",
+        }}
+      >
+        <Library size={13} style={{ flexShrink: 0 }} />
+        <span style={{ flex: 1 }}>
+          {saving ? "Saving…" : linked ? linked.name : "Link to playbook setup"}
+        </span>
+        {linked && !saving && (
+          <span
+            onClick={(e) => { e.stopPropagation(); select(null); }}
+            style={{ display: "flex", alignItems: "center", color: "var(--text-muted)", cursor: "pointer", padding: "0 2px" }}
+          >
+            <X size={12} />
+          </span>
+        )}
+        {!linked && !saving && <ChevronDown size={12} style={{ flexShrink: 0 }} />}
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+          background: "var(--bg-card)", border: "1px solid var(--border)",
+          borderRadius: 10, zIndex: 100,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)", overflow: "hidden",
+          maxHeight: 220, overflowY: "auto",
+        }}>
+          {playbook.length === 0 ? (
+            <div style={{ padding: "14px 16px", fontSize: 12, color: "var(--text-muted)" }}>
+              No playbook setups yet.
+            </div>
+          ) : (
+            playbook.map((entry) => {
+              const isLinked = trade.playbookId === entry.id;
+              return (
+                <button
+                  key={entry.id}
+                  onClick={() => select(isLinked ? null : entry.id)}
+                  style={{
+                    width: "100%", padding: "10px 14px", border: "none",
+                    background: isLinked ? "var(--accent-green-dim)" : "transparent",
+                    color: isLinked ? "var(--accent-green)" : "var(--text-primary)",
+                    cursor: "pointer", textAlign: "left", fontSize: 13,
+                    fontFamily: "'DM Sans', sans-serif",
+                    display: "flex", alignItems: "center", gap: 8,
+                    borderBottom: "1px solid var(--border)",
+                  }}
+                  onMouseEnter={(e) => { if (!isLinked) e.currentTarget.style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { if (!isLinked) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <Library size={12} color={isLinked ? "var(--accent-green)" : "var(--text-muted)"} style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: isLinked ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {entry.name}
+                    </div>
+                    {entry.timeframes && (
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>{entry.timeframes}</div>
+                    )}
+                  </div>
+                  {isLinked && <Check size={12} style={{ flexShrink: 0 }} />}
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TradePanel({ trade, onClose, onSave }: Props) {
-  const { setActivePage, setActiveTradeId } = useApp();
+  const { setActivePage, setActiveTradeId, deleteTrade } = useApp();
 
   const [entryTime, setEntryTime] = useState("");
   const [exitTime, setExitTime]   = useState("");
@@ -43,6 +160,7 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
   const [saved, setSaved]         = useState(false);
   const [images, setImages]       = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (trade) {
@@ -58,6 +176,7 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
           ? JSON.parse(trade.imageUrls || "[]")
           : trade.imageUrls || []
       );
+      setConfirmDelete(false);
     }
   }, [trade]);
 
@@ -115,6 +234,15 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
     setSaving(false);
   };
 
+  const handleDelete = async () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    await deleteTrade(trade.id);
+    onClose();
+  };
+
   const openFullJournal = () => {
     setActiveTradeId(trade.id);
     setActivePage("journal-editor");
@@ -133,10 +261,7 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
 
   return (
     <>
-      <div
-        onClick={onClose}
-        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 40 }}
-      />
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 40 }} />
 
       <div style={{
         position: "fixed", top: 0, right: 0,
@@ -165,8 +290,8 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
               </span>
               <span style={{
                 padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "600",
-                background: trade.status === "win" ? "var(--accent-green-dim)" : "var(--accent-red-dim)",
-                color: trade.status === "win" ? "var(--accent-green)" : "var(--accent-red)",
+                background: trade.status === "win" ? "rgba(0,229,122,0.12)" : "rgba(255,77,106,0.12)",
+                color: trade.status === "win" ? "#00e57a" : "#ff4d6a",
               }}>
                 {trade.status.toUpperCase()}
               </span>
@@ -175,7 +300,7 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
               <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>{trade.date}</span>
               <span style={{
                 fontSize: "13px", fontWeight: "700",
-                color: isWin ? "var(--accent-green)" : "var(--accent-red)",
+                color: isWin ? "#00e57a" : "#ff4d6a",
               }}>
                 {isWin ? "+" : ""}${trade.pnl}
               </span>
@@ -191,6 +316,7 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
 
         {/* Content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+          {/* Open journal button */}
           <button
             onClick={openFullJournal}
             style={{
@@ -215,6 +341,7 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
             Open Full Journal
           </button>
 
+          {/* Journal preview */}
           {journalPreview && (
             <div style={{
               background: "var(--bg-card)", borderRadius: "10px",
@@ -244,11 +371,11 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "22px" }}>
             {[
               { label: "Entry",      value: `$${trade.entryPrice}` },
-              { label: "Exit",       value: `$${trade.exitPrice}` },
+              { label: "Exit",       value: `$${trade.exitPrice}`  },
               { label: "Qty",        value: String(trade.quantity) },
               { label: "Commission", value: `$${trade.commission}` },
-              { label: "Fees",       value: `$${trade.fees}` },
-              { label: "Expiry",     value: trade.expiry || "—" },
+              { label: "Fees",       value: `$${trade.fees}`       },
+              { label: "Expiry",     value: trade.expiry || "—"    },
             ].map(({ label, value }) => (
               <div key={label} style={{
                 background: "var(--bg-card)", borderRadius: "8px",
@@ -258,6 +385,18 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
                 <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>{value}</div>
               </div>
             ))}
+          </div>
+
+          {/* Playbook link */}
+          <div style={{ marginBottom: "18px" }}>
+            <label style={{
+              fontSize: "11px", color: "var(--text-muted)", fontWeight: "600",
+              display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px",
+            }}>
+              <Library size={11} />
+              PLAYBOOK SETUP
+            </label>
+            <PlaybookSelector trade={trade} />
           </div>
 
           {/* Times */}
@@ -302,26 +441,12 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
             </label>
             <div style={{ display: "flex", gap: "8px" }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>
-                  MAE — worst move against you
-                </div>
-                <input
-                  type="number" step="0.01" min="0" value={mae}
-                  onChange={(e) => setMae(e.target.value)}
-                  placeholder="e.g. 1.25"
-                  style={fieldInput}
-                />
+                <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Worst move against</div>
+                <input type="number" step="0.01" min="0" value={mae} onChange={(e) => setMae(e.target.value)} placeholder="e.g. 1.25" style={fieldInput} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>
-                  MFE — best move in your favor
-                </div>
-                <input
-                  type="number" step="0.01" min="0" value={mfe}
-                  onChange={(e) => setMfe(e.target.value)}
-                  placeholder="e.g. 3.50"
-                  style={fieldInput}
-                />
+                <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px" }}>Best move in favor</div>
+                <input type="number" step="0.01" min="0" value={mfe} onChange={(e) => setMfe(e.target.value)} placeholder="e.g. 3.50" style={fieldInput} />
               </div>
             </div>
           </div>
@@ -399,8 +524,8 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
           </div>
         </div>
 
-        {/* Save */}
-        <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)" }}>
+        {/* Footer — Save and Delete */}
+        <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "10px" }}>
           <button
             onClick={handleSave}
             disabled={saving}
@@ -415,6 +540,35 @@ export default function TradePanel({ trade, onClose, onSave }: Props) {
           >
             <Save size={15} />
             {saving ? "Saving..." : saved ? "Saved" : "Save Changes"}
+          </button>
+
+          <button
+            onClick={handleDelete}
+            style={{
+              width: "100%", padding: "10px", borderRadius: "8px",
+              border: `1px solid ${confirmDelete ? "#ff4d6a" : "var(--border)"}`,
+              background: confirmDelete ? "rgba(255,77,106,0.1)" : "transparent",
+              color: confirmDelete ? "#ff4d6a" : "var(--text-muted)",
+              fontSize: "13px", fontWeight: confirmDelete ? "700" : "400",
+              cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              if (!confirmDelete) {
+                e.currentTarget.style.borderColor = "#ff4d6a";
+                e.currentTarget.style.color = "#ff4d6a";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!confirmDelete) {
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.color = "var(--text-muted)";
+              }
+            }}
+          >
+            {confirmDelete ? <AlertTriangle size={14} /> : <Trash2 size={14} />}
+            {confirmDelete ? "Confirm delete — cannot be undone" : "Delete trade"}
           </button>
         </div>
       </div>
