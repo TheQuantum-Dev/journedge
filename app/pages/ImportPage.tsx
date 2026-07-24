@@ -8,13 +8,14 @@ import { parseSchwabCSV, isSchwabCSV }              from "../lib/parseSchwabCSV"
 import { parseTDAmeritradeCSV, isTDAmeritradeCSV }  from "../lib/parseTDAmeritradeCSV";
 import { parseTastytradeCSV, isTastytradeCSV }      from "../lib/parseTastytradeCSV";
 import { parseIBKRCSV, isIBKRCSV }                 from "../lib/parseIBKRCSV";
+import { parseThinkorswimCSV, isThinkorswimCSV }    from "../lib/parseThinkorswimCSV";
 import {
   Upload, CheckCircle, AlertCircle, FileText,
   ArrowRight, X, Database, RefreshCw,
 } from "lucide-react";
 
 type ParseStatus = "idle" | "success" | "error" | "importing";
-type BrokerSource = "Journedge" | "fidelity" | "schwab" | "tdameritrade" | "tastytrade" | "ibkr";
+type BrokerSource = "Journedge" | "fidelity" | "schwab" | "tdameritrade" | "tastytrade" | "ibkr" | "thinkorswim";
 
 interface ParseResult {
   trades: Trade[];
@@ -29,6 +30,7 @@ const BADGE_CONFIG: Record<BrokerSource, { label: string; color: string; bg: str
   tdameritrade: { label: "TD Ameritrade CSV",   color: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)"  },
   tastytrade:   { label: "Tastytrade CSV",      color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)" },
   ibkr:         { label: "IBKR Activity CSV",   color: "#f472b6", bg: "rgba(244,114,182,0.12)", border: "rgba(244,114,182,0.3)" },
+  thinkorswim:  { label: "thinkorswim CSV",     color: "#22d3ee", bg: "rgba(34,211,238,0.12)",  border: "rgba(34,211,238,0.3)"  },
 };
 
 function FormatBadge({ source }: { source: BrokerSource }) {
@@ -47,6 +49,7 @@ function FormatBadge({ source }: { source: BrokerSource }) {
 
 function detectAndParse(text: string): { trades: Trade[]; source: BrokerSource } {
   if (isJournedgeCSV(text))    return { trades: parseJournedgeCSV(text),    source: "Journedge"     };
+  if (isThinkorswimCSV(text))  return { trades: parseThinkorswimCSV(text),  source: "thinkorswim"   };
   if (isSchwabCSV(text))       return { trades: parseSchwabCSV(text),       source: "schwab"        };
   if (isTastytradeCSV(text))   return { trades: parseTastytradeCSV(text),   source: "tastytrade"   };
   if (isTDAmeritradeCSV(text)) return { trades: parseTDAmeritradeCSV(text), source: "tdameritrade" };
@@ -85,6 +88,11 @@ const BROKER_CARDS = [
     desc:  "Upload an IBKR Activity Statement CSV. Export from Flex Query or the standard Activity Statement.",
     color: "#f472b6", bg: "rgba(244,114,182,0.06)", border: "rgba(244,114,182,0.2)",
   },
+  {
+    label: "thinkorswim",
+    desc:  "Upload a thinkorswim Account Statement export (Monitor → Activity and Positions → Statements → Export to CSV). This includes exact fill times unlike Schwab's Realized Gain/Loss export.",
+    color: "#22d3ee", bg: "rgba(34,211,238,0.06)", border: "rgba(34,211,238,0.2)",
+},
 ];
 
 export default function ImportPage() {
