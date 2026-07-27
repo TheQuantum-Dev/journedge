@@ -270,6 +270,8 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [riskPct, setRiskPct]     = useState(2);
   const [heatmapMetric, setHeatmapMetric] = useState<"pnl" | "winrate" | "count">("pnl");
+  const GREEN = "#00e57a";
+  const RED = "#d11d2c";
 
   const stats = useMemo(() => {
     if (trades.length === 0) return null;
@@ -292,6 +294,12 @@ export default function AnalyticsPage() {
       running += t.pnl;
       return { date: normalizeDate(t.date), equity: parseFloat(running.toFixed(2)), pnl: t.pnl };
     });
+    // For equity curve chart, calculates the values
+    const equityValues = equityCurve.map((e) => e.equity);
+    const eqYMax = Math.max(...equityValues, 0);
+    const eqYMin = Math.min(...equityValues, 0);
+    const zeroOffset =
+    eqYMax <= 0 ? 0 : eqYMin >= 0 ? 1 : eqYMax / (eqYMax - eqYMin);
 
     const daily = getDailyPnl(trades);
     const dailyPnlValues = daily.map((d) => d.pnl);
@@ -434,7 +442,7 @@ export default function AnalyticsPage() {
       rHistogram, avgR, rolling, dowData, hourData, streak,
       bestTrade, worstTrade, symbolData, tagData, tradingDays,
       hasMaeMfe, avgMae, avgMfe, entryEff, exitEff, tradeEff, maeMfeChart, maeFdCount: maeFdTrades.length,
-      overtradingDays, revengeCount, disciplineScore, meanDailyTrades, maxDayTrades, sdDailyTrades,
+      overtradingDays, revengeCount, disciplineScore, meanDailyTrades, maxDayTrades, sdDailyTrades, zeroOffset,
     };
   }, [trades, activeAccount]);
 
@@ -511,21 +519,41 @@ export default function AnalyticsPage() {
             <MetricCard label="Best Trade"  value={`+$${stats.bestTrade.pnl.toFixed(2)}`} positive icon={Award} sub={stats.bestTrade.underlying} />
             <MetricCard label="Worst Trade" value={`$${stats.worstTrade.pnl.toFixed(2)}`} positive={false} icon={AlertTriangle} sub={stats.worstTrade.underlying} />
           </div>
-
+          
           <SectionCard title="Equity Curve" subtitle="Cumulative P&L including initial balance">
             <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={stats.equityCurve}>
                 <defs>
                   <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00e57a" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#00e57a" stopOpacity={0} />
+                    <stop offset={0} stopColor={GREEN} stopOpacity={0.15} />
+                    <stop offset={stats.zeroOffset} stopColor={GREEN} stopOpacity={0.15} />
+                    <stop offset={stats.zeroOffset} stopColor={RED} stopOpacity={0.15} />
+                    <stop offset={1} stopColor={RED} stopOpacity={0.15} />
+                  </linearGradient>
+                  <linearGradient id="equityStroke" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset={0} stopColor={GREEN} />
+                    <stop offset={stats.zeroOffset} stopColor={GREEN} />
+                    <stop offset={stats.zeroOffset} stopColor={RED} />
+                    <stop offset={1} stopColor={RED} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" vertical={false} />
                 <XAxis dataKey="date" tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} formatter={((v: any) => [`$${v.toFixed(2)}`, "Equity"]) as any} />
-                <Area type="monotone" dataKey="equity" stroke="#00e57a" strokeWidth={2} fill="url(#equityGrad)" dot={false} activeDot={{ r: 4, fill: "#00e57a" }} />
+                <ReferenceLine y={0} stroke="#8888aa" strokeDasharray="4 4" strokeWidth={1} />
+                <Area
+                  type="monotone"
+                  dataKey="equity"
+                  stroke="url(#equityStroke)"
+                  strokeWidth={2}
+                  fill="url(#equityGrad)"
+                  dot={false}
+                  activeDot={(props: any) => {
+                    const { cx, cy, payload } = props;
+                    return <circle cx={cx} cy={cy} r={4} fill={payload.equity >= 0 ? GREEN : RED} />;
+                  }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </SectionCard>
