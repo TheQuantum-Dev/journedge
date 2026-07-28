@@ -182,7 +182,7 @@ export default function CalendarPage() {
 
       {/* Calendar Grid */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "16px", overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid var(--border)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr) 110px", borderBottom: "1px solid var(--border)" }}>
           {DAYS.map((day) => (
             <div key={day} style={{
               padding: "12px", textAlign: "center",
@@ -191,94 +191,162 @@ export default function CalendarPage() {
               {day}
             </div>
           ))}
+          <div style={{
+            padding: "12px", textAlign: "center",
+            fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", letterSpacing: "0.5px",
+            borderLeft: "1px solid var(--border)",
+          }}>
+            Week
+          </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-          {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={`empty-${i}`} style={{
-              minHeight: "90px",
-              borderRight: "1px solid var(--border)",
-              borderBottom: "1px solid var(--border)",
-              background: "rgba(0,0,0,0.15)",
-            }} />
-          ))}
+        {(() => {
+          const totalCells = firstDay + daysInMonth;
+          const totalRows = Math.ceil(totalCells / 7);
+          const weeks: (number | null)[][] = [];
+          for (let w = 0; w < totalRows; w++) {
+            const week: (number | null)[] = [];
+            for (let d = 0; d < 7; d++) {
+              const dayNum = w * 7 + d - firstDay + 1;
+              week.push(dayNum >= 1 && dayNum <= daysInMonth ? dayNum : null);
+            }
+            weeks.push(week);
+          }
 
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const day       = i + 1;
-            const dateStr   = formatDate(day);
-            const dayTrades = tradesByDate[dateStr] || [];
-            const dayPnl    = pnlByDate[dateStr];
-            const hasTrades = dayTrades.length > 0;
-            const isToday   =
-              day === today.getDate() &&
-              currentMonth === today.getMonth() &&
-              currentYear === today.getFullYear();
-            const isSelected = selectedDay === dateStr;
-            const isWin      = dayPnl > 0;
+          return weeks.map((week, wi) => {
+            const weekPnl: number = week.reduce<number>((sum, day) => {
+              if (day == null) return sum;
+              return sum + (pnlByDate[formatDate(day)] ?? 0);
+            }, 0);
+
+            const weekTradeCount: number = week.reduce<number>((sum, day) => {
+              if (day == null) return sum;
+              return sum + (tradesByDate[formatDate(day)]?.length ?? 0);
+            }, 0);
+            const weekHasTrades = weekTradeCount > 0;
+            const weekIsWin = weekPnl > 0;
 
             return (
-              <div
-                key={day}
-                onClick={() => hasTrades && setSelectedDay(isSelected ? null : dateStr)}
-                style={{
-                  minHeight: "90px",
-                  borderRight: "1px solid var(--border)",
-                  borderBottom: "1px solid var(--border)",
-                  padding: "10px",
-                  cursor: hasTrades ? "pointer" : "default",
-                  background: isSelected
-                    ? "var(--bg-hover)"
-                    : hasTrades ? (isWin ? WIN_BG : LOSS_BG) : "transparent",
-                  transition: "background 0.15s ease",
-                  position: "relative",
-                }}
-                onMouseEnter={(e) => {
-                  if (hasTrades && !isSelected)
-                    e.currentTarget.style.background = "var(--bg-hover)";
-                }}
-                onMouseLeave={(e) => {
-                  if (hasTrades && !isSelected)
-                    e.currentTarget.style.background = isWin ? WIN_BG : LOSS_BG;
-                }}
-              >
-                {hasTrades && (
-                  <div style={{
-                    position: "absolute", left: 0, top: 0, bottom: 0, width: "3px",
-                    background: isWin ? WIN_COLOR : LOSS_COLOR,
-                  }} />
-                )}
+              <div key={wi} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr) 110px" }}>
+                {week.map((day, di) => {
+                  if (day == null) {
+                    return (
+                      <div key={`empty-${wi}-${di}`} style={{
+                        minHeight: "90px",
+                        borderRight: "1px solid var(--border)",
+                        borderBottom: "1px solid var(--border)",
+                        background: "rgba(0,0,0,0.15)",
+                      }} />
+                    );
+                  }
 
-                <div style={{ fontSize: "13px", fontWeight: isToday ? "800" : "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
-                  {isToday ? (
-                    <span style={{
-                      width: "22px", height: "22px", borderRadius: "50%",
-                      background: WIN_COLOR, color: "#000",
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "11px", fontWeight: "800",
-                    }}>
-                      {day}
-                    </span>
+                  const dateStr   = formatDate(day);
+                  const dayTrades = tradesByDate[dateStr] || [];
+                  const dayPnl    = pnlByDate[dateStr];
+                  const hasTrades = dayTrades.length > 0;
+                  const isToday   =
+                    day === today.getDate() &&
+                    currentMonth === today.getMonth() &&
+                    currentYear === today.getFullYear();
+                  const isSelected = selectedDay === dateStr;
+                  const isWin      = dayPnl > 0;
+
+                  return (
+                    <div
+                      key={day}
+                      onClick={() => hasTrades && setSelectedDay(isSelected ? null : dateStr)}
+                      style={{
+                        minHeight: "90px",
+                        borderRight: "1px solid var(--border)",
+                        borderBottom: "1px solid var(--border)",
+                        padding: "10px",
+                        cursor: hasTrades ? "pointer" : "default",
+                        background: isSelected
+                          ? "var(--bg-hover)"
+                          : hasTrades ? (isWin ? WIN_BG : LOSS_BG) : "transparent",
+                        transition: "background 0.15s ease",
+                        position: "relative",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (hasTrades && !isSelected)
+                          e.currentTarget.style.background = "var(--bg-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (hasTrades && !isSelected)
+                          e.currentTarget.style.background = isWin ? WIN_BG : LOSS_BG;
+                      }}
+                    >
+                      {hasTrades && (
+                        <div style={{
+                          position: "absolute", left: 0, top: 0, bottom: 0, width: "3px",
+                          background: isWin ? WIN_COLOR : LOSS_COLOR,
+                        }} />
+                      )}
+
+                      <div style={{ fontSize: "13px", fontWeight: isToday ? "800" : "500", color: "var(--text-secondary)", marginBottom: "6px" }}>
+                        {isToday ? (
+                          <span style={{
+                            width: "22px", height: "22px", borderRadius: "50%",
+                            background: WIN_COLOR, color: "#000",
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "11px", fontWeight: "800",
+                          }}>
+                            {day}
+                          </span>
+                        ) : (
+                          <span>{day}</span>
+                        )}
+                      </div>
+
+                      {hasTrades && (
+                        <div>
+                          <div style={{ fontSize: "13px", fontWeight: "700", color: isWin ? WIN_COLOR : LOSS_COLOR, marginBottom: "3px" }}>
+                            {isWin ? "+" : ""}${dayPnl.toFixed(2)}
+                          </div>
+                          <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                            {dayTrades.length} trade{dayTrades.length !== 1 ? "s" : ""}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Weekly total column */}
+                <div style={{
+                  minHeight: "90px",
+                  borderBottom: "1px solid var(--border)",
+                  borderLeft: "1px solid var(--border)",
+                  padding: "10px",
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center",
+                  background: weekHasTrades
+                    ? (weekIsWin ? WIN_BG : LOSS_BG)
+                    : "rgba(255,255,255,0.015)",
+                }}>
+                  {weekHasTrades ? (
+                    <>
+                      <div style={{ fontSize: "10px", color: "var(--text-muted)", fontWeight: "600", marginBottom: "4px" }}>
+                        Week {wi + 1}
+                      </div>
+                      <div style={{ fontSize: "15px", fontWeight: "800", color: weekIsWin ? WIN_COLOR : LOSS_COLOR }}>
+                        {weekIsWin ? "+" : ""}${weekPnl.toFixed(2)}
+                      </div>
+                      <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px" }}>
+                        {weekTradeCount} trade{weekTradeCount !== 1 ? "s" : ""}
+                      </div>
+                    </>
                   ) : (
-                    <span>{day}</span>
+                    <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
+                      Week {wi + 1}
+                    </div>
                   )}
                 </div>
-
-                {hasTrades && (
-                  <div>
-                    <div style={{ fontSize: "13px", fontWeight: "700", color: isWin ? WIN_COLOR : LOSS_COLOR, marginBottom: "3px" }}>
-                      {isWin ? "+" : ""}${dayPnl.toFixed(2)}
-                    </div>
-                    <div style={{ fontSize: "10px", color: "var(--text-muted)" }}>
-                      {dayTrades.length} trade{dayTrades.length !== 1 ? "s" : ""}
-                    </div>
-                  </div>
-                )}
               </div>
             );
-          })}
-        </div>
+          });
+        })()}
       </div>
-
       {/* Monthly breakdown */}
       {tradingDaysCount > 0 ? (
         <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
