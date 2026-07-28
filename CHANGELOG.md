@@ -33,6 +33,7 @@ All notable changes to Journedge are documented here.
 ### 👥 Contributors
 
 - The Quantum Dev
+- lollllcat
 - dependabot[bot]
 
 ## [3.2.1] - 2026-07-14
