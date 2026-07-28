@@ -68,7 +68,7 @@ The most impactful contribution you can make is adding CSV import support for a 
 3. Make your changes
 4. Test locally — make sure `npm run dev` runs without errors
 5. Commit with a clear message: `git commit -m "feat: add tastytrade CSV parser"`
-6. Push and open a PR against `main`
+6. Push and open a PR against `dev`
 
 **Commit message format:**
 ```
