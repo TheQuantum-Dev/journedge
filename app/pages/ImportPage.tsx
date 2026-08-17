@@ -9,17 +9,23 @@ import { parseTDAmeritradeCSV, isTDAmeritradeCSV }  from "../lib/parseTDAmeritra
 import { parseTastytradeCSV, isTastytradeCSV }      from "../lib/parseTastytradeCSV";
 import { parseIBKRCSV, isIBKRCSV }                 from "../lib/parseIBKRCSV";
 import {
+  isWebullCSV,
+  parseWebullCSVWithDiagnostics,
+} from "../lib/parseWebullCSV";
+import type { WebullParseDiagnostics } from "../lib/parseWebullCSV";
+import {
   Upload, CheckCircle, AlertCircle, FileText,
   ArrowRight, X, Database, RefreshCw,
 } from "lucide-react";
 
 type ParseStatus = "idle" | "success" | "error" | "importing";
-type BrokerSource = "Journedge" | "fidelity" | "schwab" | "tdameritrade" | "tastytrade" | "ibkr";
+type BrokerSource = "Journedge" | "fidelity" | "schwab" | "tdameritrade" | "tastytrade" | "ibkr" | "webull";
 
 interface ParseResult {
   trades: Trade[];
   source: BrokerSource;
   count:  number;
+  diagnostics?: WebullParseDiagnostics;
 }
 
 const BADGE_CONFIG: Record<BrokerSource, { label: string; color: string; bg: string; border: string }> = {
@@ -29,6 +35,7 @@ const BADGE_CONFIG: Record<BrokerSource, { label: string; color: string; bg: str
   tdameritrade: { label: "TD Ameritrade CSV",   color: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)"  },
   tastytrade:   { label: "Tastytrade CSV",      color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.3)" },
   ibkr:         { label: "IBKR Activity CSV",   color: "#f472b6", bg: "rgba(244,114,182,0.12)", border: "rgba(244,114,182,0.3)" },
+  webull:       { label: "Webull Orders CSV",   color: "#22d3ee", bg: "rgba(34,211,238,0.12)",  border: "rgba(34,211,238,0.3)" },
 };
 
 function FormatBadge({ source }: { source: BrokerSource }) {
@@ -45,13 +52,35 @@ function FormatBadge({ source }: { source: BrokerSource }) {
   );
 }
 
-function detectAndParse(text: string): { trades: Trade[]; source: BrokerSource } {
+function detectAndParse(text: string): {
+  trades: Trade[];
+  source: BrokerSource;
+  diagnostics?: WebullParseDiagnostics;
+} {
   if (isJournedgeCSV(text))    return { trades: parseJournedgeCSV(text),    source: "Journedge"     };
   if (isSchwabCSV(text))       return { trades: parseSchwabCSV(text),       source: "schwab"        };
   if (isTastytradeCSV(text))   return { trades: parseTastytradeCSV(text),   source: "tastytrade"   };
   if (isTDAmeritradeCSV(text)) return { trades: parseTDAmeritradeCSV(text), source: "tdameritrade" };
   if (isIBKRCSV(text))         return { trades: parseIBKRCSV(text),         source: "ibkr"         };
+  if (isWebullCSV(text)) {
+    const result = parseWebullCSVWithDiagnostics(text);
+    return { ...result, source: "webull" };
+  }
   return { trades: parseFidelityCSV(text), source: "fidelity" };
+}
+
+function webullDiagnosticMessages(diagnostics: WebullParseDiagnostics): string[] {
+  const messages: string[] = [];
+  if (diagnostics.skippedRows > 0) {
+    messages.push(`${diagnostics.skippedRows} non-filled or invalid row${diagnostics.skippedRows === 1 ? "" : "s"} skipped`);
+  }
+  if (diagnostics.unmatchedBuyQuantity > 0) {
+    messages.push(`${diagnostics.unmatchedBuyQuantity} open share${diagnostics.unmatchedBuyQuantity === 1 ? "" : "s"} not imported`);
+  }
+  if (diagnostics.unmatchedSellQuantity > 0) {
+    messages.push(`${diagnostics.unmatchedSellQuantity} unmatched sell share${diagnostics.unmatchedSellQuantity === 1 ? "" : "s"} ignored`);
+  }
+  return messages;
 }
 
 const BROKER_CARDS = [
@@ -85,6 +114,11 @@ const BROKER_CARDS = [
     desc:  "Upload an IBKR Activity Statement CSV. Export from Flex Query or the standard Activity Statement.",
     color: "#f472b6", bg: "rgba(244,114,182,0.06)", border: "rgba(244,114,182,0.2)",
   },
+  {
+    label: "Webull",
+    desc:  "Upload a Webull Orders CSV. Filled long buys and sells are matched FIFO; open or unmatched orders are reported.",
+    color: "#22d3ee", bg: "rgba(34,211,238,0.06)", border: "rgba(34,211,238,0.2)",
+  },
 ];
 
 export default function ImportPage() {
@@ -116,16 +150,21 @@ export default function ImportPage() {
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
-        const { trades, source } = detectAndParse(text);
+        const { trades, source, diagnostics } = detectAndParse(text);
         if (trades.length === 0) {
           setStatus("error");
+          const diagnosticText = diagnostics
+            ? webullDiagnosticMessages(diagnostics).join("; ")
+            : "";
           setMessage(
-            "No trades found. Make sure this is a supported broker export or a Journedge CSV. " +
-            "Supported: Fidelity, Charles Schwab, TD Ameritrade, Tastytrade, Interactive Brokers, Journedge."
+            diagnostics
+              ? `No completed Webull trades found. Open and unmatched orders are not imported${diagnosticText ? `: ${diagnosticText}` : ""}.`
+              : "No trades found. Make sure this is a supported broker export or a Journedge CSV. " +
+                "Supported: Fidelity, Charles Schwab, TD Ameritrade, Tastytrade, Interactive Brokers, Webull, Journedge."
           );
           return;
         }
-        setResult({ trades, source, count: trades.length });
+        setResult({ trades, source, count: trades.length, diagnostics });
         setStatus("success");
         setMessage(`Found ${trades.length} trade${trades.length !== 1 ? "s" : ""} — ready to import.`);
       } catch {
@@ -331,6 +370,17 @@ export default function ImportPage() {
               <ArrowRight size={14} />
             </button>
           </div>
+        </div>
+      )}
+
+      {status === "success" && result?.diagnostics && webullDiagnosticMessages(result.diagnostics).length > 0 && (
+        <div style={{
+          marginTop: "12px", padding: "12px 16px", borderRadius: "10px",
+          background: "rgba(251,146,60,0.08)", border: "1px solid rgba(251,146,60,0.25)",
+          color: "#fb923c", fontSize: "12px", lineHeight: "1.5",
+        }}>
+          <strong>Webull import note:</strong>{" "}
+          {webullDiagnosticMessages(result.diagnostics).join("; ")}.
         </div>
       )}
 
