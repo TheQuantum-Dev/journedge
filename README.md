@@ -106,7 +106,7 @@ Monthly P&L calendar — always hardcoded red/green. Snaps to your most recent t
 ![Calendar](docs/screenshots/calendar.png)
 
 ### Import
-Broker auto-detection including Fidelity, Charles Schwab, TD Ameritrade, Tastytrade, and Interactive Brokers.
+Broker auto-detection including Fidelity, Charles Schwab, TD Ameritrade, Tastytrade, Interactive Brokers, and Webull.
 
 ![Import](docs/screenshots/import.png)
 
@@ -287,6 +287,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | TD Ameritrade | Works with post-Schwab merger exports | ✅ Supported |
 | Tastytrade | Options, stocks, and futures all supported | ✅ Supported |
 | Interactive Brokers | Export from Flex Query or Activity Statement | ✅ Supported |
+| Webull | Export the Orders CSV; filled long buys and sells are matched FIFO | ✅ Supported |
 | Journedge Export | Re-import your own exports — all journal data preserved | ✅ Supported |
 
 ### Fidelity
@@ -304,13 +305,16 @@ Go to your **Gain/Loss** tab, select **Realized Gain/Loss**, choose **Lot Detail
 ### Interactive Brokers
 **Reports → Flex Queries** or open an **Activity Statement**, set format to CSV, ensure the **Trades** section is included.
 
+### Webull
+Export the **Orders** history as CSV. The file must include the Webull Orders columns, including **Symbol**, **Side**, **Status**, **Filled**, **Avg Price**, and **Filled Time**. Journedge imports completed long buy/sell matches using FIFO. Open positions and unmatched sells are reported during preview but are not imported as completed trades.
+
 ---
 
 ## Architecture Notes
 
 **Database.** SQLite via Prisma. All data is local. The database file lives at `prisma/journedge.db` and is gitignored.
 
-**CSV parsers.** Each broker has an isolated parser in `app/lib/`. Format detection runs in priority order — Journedge export first, then Charles Schwab, Tastytrade, TD Ameritrade, IBKR, with Fidelity as the fallback. The Schwab parser is distinct from the others because Schwab's export reports closed lots directly rather than individual buy/sell transaction rows.
+**CSV parsers.** Each broker has an isolated parser in `app/lib/`. Format detection runs in priority order — Journedge export first, then Charles Schwab, Tastytrade, TD Ameritrade, IBKR, Webull, with Fidelity as the fallback. The Schwab parser is distinct from the others because Schwab's export reports closed lots directly rather than individual buy/sell transaction rows. The Webull parser matches filled orders into completed trades using FIFO and exposes diagnostics for open or unmatched quantities.
 
 **Journal editor.** Built on TipTap with ProseMirror. Documents stored as TipTap JSON in the `journalEntry` TEXT column. Legacy plain-text entries render as plain paragraphs. Autosave debounces 1.5 seconds and patches the in-memory trade immediately so navigation never shows stale content.
 
